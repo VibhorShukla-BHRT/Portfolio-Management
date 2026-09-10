@@ -1,0 +1,8 @@
+.ritu_brain
+.env
+Mid_Term_Presentation.pptx
+.~lock.Mid_Term_Presentation.pptx#
+venv
+tasks/__pycache__
+agents/__pycache__
+tools/__pycache__

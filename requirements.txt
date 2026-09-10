@@ -1,0 +1,7 @@
+crewai
+langchain
+langchain-google-genai
+yfinance
+pandas
+python-dotenv
+duckduckgo-search
