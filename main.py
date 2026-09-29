@@ -9,12 +9,12 @@ load_dotenv()
 
 def main():
     print("Welcome to the Multi-Agent Portfolio Management System!")
-    print("Initializing AI Agents with Google Gemini...")
+    print("Initializing AI Agents with OpenRouter...")
     
     # Check if API key is set
-    if not os.getenv("GEMINI_API_KEY"):
-        print("\nERROR: GEMINI_API_KEY is not set in the environment.")
-        print("Please create a .env file with your GEMINI_API_KEY and try again.")
+    if not os.getenv("OPENROUTER_API_KEY"):
+        print("\nERROR: OPENROUTER_API_KEY is not set in the environment.")
+        print("Please create a .env file with your OPENROUTER_API_KEY and try again.")
         return
 
     # Define the target tech stocks

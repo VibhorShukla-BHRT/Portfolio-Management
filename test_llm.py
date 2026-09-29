@@ -6,7 +6,7 @@ load_dotenv()
 
 def test_llm():
     try:
-        llm = LLM(model="gemini/gemini-1.5-pro-latest", temperature=0.2)
+        llm = LLM(model="openrouter/free", temperature=0.2)
         response = llm.call(messages=[{"role": "user", "content": "Hello"}])
         print("Response:", response)
         print("Success!")

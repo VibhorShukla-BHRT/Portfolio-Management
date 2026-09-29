@@ -5,7 +5,7 @@ import os
 class PortfolioAgents:
     def __init__(self):
         # CrewAI uses litellm under the hood for API models
-        self.llm = "gemini/gemini-3.6-flash"
+        self.llm = "openrouter/openrouter/free"
 
     def quantitative_analyst(self):
         return Agent(
