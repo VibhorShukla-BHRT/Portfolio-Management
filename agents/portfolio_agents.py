@@ -1,67 +1,112 @@
-from crewai import Agent
-from tools.financial_tools import fetch_stock_data, fetch_company_fundamentals, calculate_technical_indicators, fetch_stock_news
+from crewai import Agent, LLM
 import os
+from tools.financial_tools import fetch_stock_data, fetch_company_fundamentals, calculate_technical_indicators, fetch_stock_news
+from tools.optimization_tools import calculate_optimal_portfolio
+from tools.memory_tools import store_memory, retrieve_memory
+from tools.screening_tools import screen_top_assets
 
 class PortfolioAgents:
     def __init__(self):
-        # CrewAI uses litellm under the hood for API models
-        self.llm = "openrouter/openrouter/free"
+        self.llm = LLM(
+            model="openrouter/openrouter/free",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+            base_url="https://openrouter.ai/api/v1"
+        )
+
+    def pre_selection_agent(self):
+        return Agent(
+            role='Universe Screener and Asset Ranker',
+            goal='Dynamically rank a broad universe of stocks and select the top N for deep analysis.',
+            backstory=(
+                "You are an expert quantitative screener. Instead of analyzing hardcoded tickers, "
+                "you evaluate sectors and macroeconomic trends to select the most promising assets "
+                "using listwise relative ranking techniques."
+            ),
+            verbose=False,
+            allow_delegation=False,
+            tools=[screen_top_assets],
+            llm=self.llm
+        )
 
     def quantitative_analyst(self):
         return Agent(
             role='Quantitative Financial Analyst',
-            goal='Analyze historical price data and technical indicators to identify market trends for tech stocks.',
+            goal='Analyze historical price data and technical indicators to identify market trends.',
             backstory=(
-                "You are an expert quantitative analyst with decades of experience in algorithmic trading "
-                "and technical analysis. You excel at reading chart patterns, moving averages, and momentum indicators "
-                "to predict short-term and medium-term price movements."
+                "You are an expert quantitative analyst. You excel at reading chart patterns, "
+                "moving averages, and high-frequency data to predict price movements. You use layered memory to compare current setups with historical ones."
             ),
-            verbose=True,
+            verbose=False,
             allow_delegation=False,
-            tools=[fetch_stock_data, calculate_technical_indicators],
+            tools=[fetch_stock_data, calculate_technical_indicators, retrieve_memory, store_memory],
             llm=self.llm
         )
 
-    def fundamental_analyst(self):
+    def bull_researcher(self):
         return Agent(
-            role='Fundamental Equity Analyst',
-            goal='Evaluate company financials, valuation metrics, and recent news to determine the intrinsic value of tech stocks.',
+            role='Bull Market Researcher',
+            goal='Identify catalysts for growth, undervalued metrics, and positive market sentiment.',
             backstory=(
-                "You are a seasoned value investor and fundamental analyst. You dissect balance sheets, "
-                "P/E ratios, profit margins, and keep a close eye on market news to understand the true health "
-                "and future growth potential of technology companies."
+                "You are a perma-bull analyst. Your job is to find reasons why an asset will appreciate. "
+                "You look for strong balance sheets, positive earnings surprises, and macro tailwinds."
             ),
-            verbose=True,
+            verbose=False,
             allow_delegation=False,
-            tools=[fetch_company_fundamentals, fetch_stock_news],
+            tools=[fetch_company_fundamentals, fetch_stock_news, retrieve_memory],
+            llm=self.llm
+        )
+
+    def bear_researcher(self):
+        return Agent(
+            role='Bear Market Researcher',
+            goal='Uncover balance sheet weaknesses, macro headwinds, and overbought technical indicators.',
+            backstory=(
+                "You are a skeptical short-seller. Your job is to find reasons why an asset will decline. "
+                "You rigorously hunt for debt risks, deteriorating margins, and negative sentiment."
+            ),
+            verbose=False,
+            allow_delegation=False,
+            tools=[fetch_company_fundamentals, fetch_stock_news, retrieve_memory],
+            llm=self.llm
+        )
+
+    def debate_orchestrator(self):
+        return Agent(
+            role='Debate Orchestrator',
+            goal='Synthesize the conflicting viewpoints of the Bull and Bear researchers to arrive at a balanced, objective truth.',
+            backstory=(
+                "You are a rigorous managing director. You listen to both the Bull and Bear analysts, "
+                "force them to weigh opposing facts, and strip away emotional bias and hallucinations to produce a definitive qualitative view on the asset."
+            ),
+            verbose=False,
+            allow_delegation=True,
             llm=self.llm
         )
 
     def risk_manager(self):
         return Agent(
             role='Risk Management Specialist',
-            goal='Assess the downside risk and overall volatility of potential investments in the tech sector.',
+            goal='Assess tail risk, historical drawdowns, and structural resilience of the proposed views.',
             backstory=(
-                "You are a strict and cautious risk manager at a top-tier hedge fund. Your primary objective "
-                "is capital preservation. You analyze the risks associated with specific stocks, looking at market "
-                "conditions, sector volatility, and company-specific red flags."
+                "You are a strict risk manager focusing on Conditional Value at Risk and extreme drawdowns. "
+                "You override bullish exuberance if downside protection is compromised."
             ),
-            verbose=True,
+            verbose=False,
             allow_delegation=False,
-            tools=[fetch_stock_news],
+            tools=[fetch_stock_news, retrieve_memory],
             llm=self.llm
         )
 
     def portfolio_manager(self):
         return Agent(
             role='Chief Portfolio Manager',
-            goal='Synthesize insights from analysts and risk managers to make final asset allocation decisions for profit maximization.',
+            goal='Translate qualitative views into mathematically optimal weights using the Black-Litterman model or Hierarchical Risk Parity.',
             backstory=(
-                "You are a highly successful hedge fund manager overseeing a multi-million dollar tech portfolio. "
-                "You are known for your strategic thinking and ability to balance aggressive profit maximization "
-                "with prudent risk management. You make the final call on what to buy, hold, or sell based on comprehensive data."
+                "You do NOT hallucinate numerical weights. You collect the finalized views from the Debate Orchestrator, "
+                "format them into a JSON of expected absolute returns, and execute the quantitative optimization tool to construct the portfolio mathematically."
             ),
-            verbose=True,
-            allow_delegation=True, # Can ask analysts for more info if needed
+            verbose=False,
+            allow_delegation=True,
+            tools=[calculate_optimal_portfolio],
             llm=self.llm
         )

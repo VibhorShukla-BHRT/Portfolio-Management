@@ -1,52 +1,82 @@
 from crewai import Task
 
 class PortfolioTasks:
-    def technical_analysis_task(self, agent, tickers):
+    def pre_selection_task(self, agent):
         return Task(
             description=(
-                f"Perform a comprehensive technical analysis on the following tech stocks: {', '.join(tickers)}. "
-                "Use the tools provided to fetch historical price data and calculate technical indicators (like 50-day and 200-day SMAs). "
-                "Identify if each stock is currently in a bullish or bearish trend."
+                "Use the screen_top_assets tool to fetch the technology universe, "
+                "then select the top 4 best-positioned tickers for the current macroeconomic environment."
             ),
-            expected_output="A detailed technical analysis report for each ticker, including current price, SMA levels, and a clear 'Bullish', 'Bearish', or 'Neutral' technical rating.",
+            expected_output="A JSON string list of the top 4 tickers to analyze, strictly formatted.",
             agent=agent
         )
 
-    def fundamental_analysis_task(self, agent, tickers):
+    def quantitative_analysis_task(self, agent):
         return Task(
             description=(
-                f"Perform a thorough fundamental analysis on the following tech stocks: {', '.join(tickers)}. "
-                "Fetch their company fundamentals (P/E ratio, market cap, profit margins) and search for recent news "
-                "that might impact their future growth. Evaluate their valuation and growth prospects."
+                "Wait for the top 4 tickers from the Pre-Selection Agent. "
+                "For each ticker, fetch historical data and calculate technical indicators. "
+                "Query your long-term memory for past quantitative observations. "
+                "Store any major new technical breakout in memory."
             ),
-            expected_output="A comprehensive fundamental analysis report for each ticker, highlighting key financial metrics, recent news sentiment, and a 'Strong', 'Moderate', or 'Weak' fundamental rating.",
+            expected_output="A quantitative analysis report detailing current indicators and historical context for each ticker.",
             agent=agent
         )
 
-    def risk_assessment_task(self, agent, tickers):
+    def bull_analysis_task(self, agent):
         return Task(
             description=(
-                f"Assess the risks associated with investing in the following tech stocks right now: {', '.join(tickers)}. "
-                "Search for macroeconomic risks, sector-specific headwinds, or company-specific controversies. "
-                "Consider the current market environment for the technology sector."
+                "For the selected tickers, actively search for bullish fundamental metrics, "
+                "positive earnings surprises, and macro tailwinds. Retrieve past bullish memories."
             ),
-            expected_output="A risk assessment report detailing potential downsides, market risks, and assigning a 'High', 'Medium', or 'Low' risk score for each ticker.",
+            expected_output="A report exclusively detailing the bullish arguments and catalysts for each ticker.",
             agent=agent
         )
 
-    def strategy_recommendation_task(self, agent, tickers):
+    def bear_analysis_task(self, agent):
         return Task(
             description=(
-                f"Review the reports from the Quantitative Analyst, Fundamental Analyst, and Risk Manager regarding the following tech stocks: {', '.join(tickers)}. "
-                "Synthesize this information to create a final portfolio strategy aimed at profit maximization. "
-                "For each ticker, provide a clear, actionable recommendation (BUY, HOLD, or SELL) and a target allocation percentage for a hypothetical $100,000 portfolio."
+                "For the selected tickers, rigorously hunt for balance sheet weaknesses, "
+                "deteriorating margins, and bearish news sentiment. Retrieve past bearish memories."
+            ),
+            expected_output="A report exclusively detailing the bearish arguments, risks, and headwinds for each ticker.",
+            agent=agent
+        )
+
+    def debate_task(self, agent):
+        return Task(
+            description=(
+                "Review the conflicting reports from the Bull and Bear Researchers, as well as the Quantitative Analyst. "
+                "Synthesize an objective, final view on each ticker's expected directional performance and your confidence in that view."
+            ),
+            expected_output=(
+                "A balanced summary of the debate for each ticker, concluding with a JSON object representing your expected absolute views. "
+                "Format: {'TICKER1': 0.05, 'TICKER2': -0.02, ...} where numbers represent expected returns."
+            ),
+            agent=agent
+        )
+
+    def risk_assessment_task(self, agent):
+        return Task(
+            description=(
+                "Review the finalized views from the Debate Orchestrator. Assess the tail risk and structural resilience. "
+                "If downside protection is severely compromised, provide a warning to the Chief Portfolio Manager."
+            ),
+            expected_output="A risk assessment report evaluating the safety of the proposed views.",
+            agent=agent
+        )
+
+    def strategy_recommendation_task(self, agent):
+        return Task(
+            description=(
+                "Review the Debate Orchestrator's views JSON and the Risk Manager's warnings. "
+                "Use the calculate_optimal_portfolio tool by passing the views JSON and the tickers list. "
+                "Do NOT hallucinate numerical weights yourself; strictly use the output from the tool."
             ),
             expected_output=(
                 "A finalized Portfolio Management Strategy Document formatted in markdown. It must include:\n"
-                "1. An executive summary of the tech market.\n"
-                "2. A clear BUY/HOLD/SELL recommendation for each ticker with a brief justification.\n"
-                "3. A proposed portfolio allocation breakdown (percentages totaling 100%).\n"
-                "4. A summary of the main risks to this strategy."
+                "1. An executive summary of the debate and risk assessment.\n"
+                "2. The final mathematically optimized portfolio weights generated by the optimization tool."
             ),
             agent=agent
         )
