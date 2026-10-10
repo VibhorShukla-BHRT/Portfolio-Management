@@ -1,0 +1,68 @@
+{
+    "2022-11-01": {
+        "TSLA": [
+            "Tesla reportedly plans to lower production in China amid slowing demand.",
+            "Elon Musk finalizes Twitter acquisition, raising concerns about his focus on Tesla."
+        ],
+        "MSFT": [
+            "Microsoft reports slower Azure growth, citing macroeconomic headwinds.",
+            "PC market continues to slump, impacting Windows OEM revenue."
+        ],
+        "AMZN": [
+            "Amazon forecasts sluggish holiday sales.",
+            "AWS growth slows down to 27% as companies optimize cloud spending."
+        ],
+        "NFLX": [
+            "Netflix adds 2.4 million subscribers, reversing subscriber losses.",
+            "Ad-supported tier launch imminent, expected to boost revenue."
+        ],
+        "COIN": [
+            "Crypto winter continues with low trading volumes.",
+            "Regulatory scrutiny increases on centralized exchanges."
+        ]
+    },
+    "2023-01-01": {
+        "TSLA": [
+            "Tesla aggressively cuts prices globally to spur demand.",
+            "Q4 deliveries miss estimates despite record production."
+        ],
+        "MSFT": [
+            "Microsoft announces 10,000 job cuts.",
+            "Rumors of a massive $10B investment in OpenAI (ChatGPT) surface."
+        ],
+        "AMZN": [
+            "Amazon expands layoffs to 18,000 corporate roles.",
+            "E-commerce margins remain pressured by inflation."
+        ],
+        "NFLX": [
+            "Reed Hastings steps down as co-CEO.",
+            "Netflix subscriber growth beats expectations in Q4."
+        ],
+        "COIN": [
+            "Coinbase cuts 20% of its workforce.",
+            "FTX fallout continues to weigh on the broader crypto market, though COIN survives."
+        ]
+    },
+    "2023-03-01": {
+        "TSLA": [
+            "Tesla Investor Day focuses on manufacturing efficiency but lacks new vehicle details.",
+            "Price cuts begin to show positive impact on sales volume."
+        ],
+        "MSFT": [
+            "Microsoft integrates ChatGPT into Bing, sparking an AI arms race.",
+            "Azure growth stabilizes as AI workloads increase."
+        ],
+        "AMZN": [
+            "Amazon pauses construction of second headquarters.",
+            "AWS announces new AI partnerships to compete with Microsoft."
+        ],
+        "NFLX": [
+            "Password sharing crackdown rolls out in more countries.",
+            "Strong content slate drives engagement."
+        ],
+        "COIN": [
+            "Bitcoin rallies past $24,000, boosting trading volumes.",
+            "SEC issues Wells Notice to Coinbase regarding staking products."
+        ]
+    }
+}

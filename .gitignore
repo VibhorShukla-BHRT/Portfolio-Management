@@ -6,3 +6,4 @@ venv
 tasks/__pycache__
 agents/__pycache__
 tools/__pycache__
+.chroma_db
