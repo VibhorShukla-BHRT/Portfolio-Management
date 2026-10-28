@@ -15,6 +15,7 @@ from pypfopt import BlackLittermanModel
 from pypfopt import HRPOpt
 from pypfopt.efficient_frontier import EfficientFrontier
 import tools.financial_tools as ft
+from simulation import unmask_ticker, unmask_views, is_masking_active
 
 def _parse_json_or_data(data):
     if isinstance(data, (dict, list)):
@@ -46,6 +47,11 @@ def calculate_optimal_portfolio(views_json: str, tickers_json: str) -> str:
         
         if not isinstance(tickers, list) or not tickers:
             return "Error: tickers must be a non-empty list of symbols."
+
+        # Translate any masked identifiers back to real tickers for numerical calculation
+        tickers = [unmask_ticker(t) or t for t in tickers]
+        if isinstance(views, dict):
+            views = unmask_views(views)
         
         # Ensure simulated date is respected to prevent look-ahead bias
         sim_date = getattr(ft, 'SIMULATED_DATE', None)

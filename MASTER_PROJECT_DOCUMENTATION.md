@@ -37,22 +37,25 @@ flowchart TD
         D2["Point-in-Time Fundamentals (10-Q / 10-K)"]
         D3["Point-in-Time Financial News Stream"]
         D4["MASS Masking Protocol (Asset & Temporal Shield)"]
-        D1 & D2 & D3 --> D4
+        D1 --> D4
+        D2 --> D4
+        D3 --> D4
     end
 
     subgraph Agents["2. Adversarial Multi-Agent Debate Pipeline"]
         A1["Universe Screener (Pre-Selection)"] --> A2["Quantitative Analyst (SMAs & Volatility)"]
         A1 --> A3["Bull Researcher (Upside Catalysts)"]
         A1 --> A4["Bear Researcher (Downside Risks)"]
-        A3 & A4 --> A5["Debate Orchestrator (Adversarial Synthesis)"]
-        A2 & A5 --> A6["Risk Manager (Drawdown & Tail-Risk Shield)"]
+        A3 --> A5["Debate Orchestrator (Adversarial Synthesis)"]
+        A4 --> A5
+        A2 --> A6["Risk Manager (Drawdown & Tail-Risk Shield)"]
+        A5 --> A6
     end
 
     subgraph Memory["3. Cognitive Layered Memory (ChromaDB)"]
         M1["Working Memory (Prompt Buffer)"]
         M2["Short-Term Memory (High-Freq News)"]
         M3["Long-Term Vector Memory (Macro Shocks & Analog Regimes)"]
-        M1 & M2 & M3 <--> Agents
     end
 
     subgraph Solvers["4. Deterministic Convex Optimization"]
@@ -65,12 +68,18 @@ flowchart TD
     end
 
     subgraph Execution["5. Portfolio Construction & Rebalancing"]
-        E1["Continuous Optimal Weights Vector: w_TSLA, w_MSFT, w_AMZN, w_NFLX, w_COIN"]
+        E1["Continuous Optimal Weights Vector"]
         E2["Performance Evaluation & Metric Logging"]
-        S2 & S3 --> E1 --> E2
+        S2 --> E1
+        S3 --> E1
+        E1 --> E2
     end
 
-    D4 --> Agents
+    D4 --> A1
+    M2 --> A3
+    M2 --> A4
+    M3 --> A2
+    M3 --> A6
 ```
 
 By strictly confining the LLM to an **Alpha Screen** (generating structured directional return views $Q$ and uncertainty $\Omega$) and delegating capital allocation to **convex quadratic solvers (Black-Litterman and HRP)**, the architecture achieves mathematical safety, superior risk-adjusted returns (Sharpe **1.60** vs. FinMem's **1.42**), and verified benchmark alpha.
@@ -173,7 +182,7 @@ sequenceDiagram
     participant Memory as ChromaDB Layered Memory
     participant Risk as Risk Manager
     participant PM as Chief Portfolio Manager
-    participant Opt as Convex Optimizer (PyPortfolioOpt)
+    participant Solver as Convex Optimizer (PyPortfolioOpt)
 
     User->>Screener: Trigger execution with simulated date
     Screener->>Quant: Pass Top-N candidate tickers
@@ -192,12 +201,12 @@ sequenceDiagram
     end
 
     Debate->>Debate: Reconcile Bull/Bear arguments & strip hallucination
-    Debate-->>Risk: Emit expected return views JSON {TICKER: Return}
+    Debate-->>Risk: Emit expected return views JSON
     Risk->>Memory: Check tail-risk & drawdown history
     Risk->>PM: Issue risk guardrails & regime alerts
-    PM->>Opt: Pass views JSON & tickers to calculate_optimal_portfolio
-    Opt->>Opt: Solve Black-Litterman (fallback to HRP if ill-conditioned)
-    Opt-->>PM: Return exact mathematical weights
+    PM->>Solver: Pass views JSON & tickers to calculate_optimal_portfolio
+    Solver->>Solver: Solve Black-Litterman (fallback to HRP if ill-conditioned)
+    Solver-->>PM: Return exact mathematical weights
     PM-->>User: Publish finalized portfolio strategy document
 ```
 
@@ -265,10 +274,14 @@ flowchart TD
         S1["Relevancy Score: 1 / (1 + Distance)"]
         S2["Recency Score: Exponential Decay (decay_rate ^ days)"]
         S3["Importance Score: Integer (1-10)"]
-        S1 & S2 & S3 --> SC["Composite Score = alpha*Recency + beta*Relevancy + gamma*Importance"]
+        S1 --> SC["Composite Score = alpha*Recency + beta*Relevancy + gamma*Importance"]
+        S2 --> SC
+        S3 --> SC
     end
 
-    Layers --> Scoring
+    L1 --> S2
+    L2 --> S2
+    L3 --> S3
     SC --> Res["Top-K Context Injected into Agent Prompt"]
 ```
 
@@ -278,17 +291,19 @@ When an agent queries the memory database using `retrieve_memory(query, ticker)`
 $$\text{Score}(m) = \alpha \cdot R(m) + \beta \cdot S(m) + \gamma \cdot I(m)$$
 
 Where:
-1. **Semantic Relevancy $S(m)$:** Derived from the vector distance in semantic embedding space:
+1. **Semantic Relevancy $S(m)$:** Derived from genuine high-dimensional sentence transformer embeddings using ChromaDB's built-in `all-MiniLM-L6-v2` ONNX model (384-dimensional dense semantic vector space):
    $$S(m) = \frac{1}{1 + D(\vec{q}, \vec{d}_m)}$$
+   Where $D(\vec{q}, \vec{d}_m)$ is the cosine distance between query embedding $\vec{q}$ and document embedding $\vec{d}_m$.
 2. **Recency with Layer-Specific Exponential Decay $R(m)$:**
    $$R(m) = \delta_{\text{layer}}^{\Delta t}$$
-   Where $\Delta t$ is the elapsed time in days, and $\delta_{\text{layer}}$ controls the decay rate:
+   Where $\Delta t$ is the elapsed time in days (computed point-in-time relative to `SIMULATED_DATE`), and $\delta_{\text{layer}}$ controls the decay rate:
    * **Shallow Layer:** $\delta = 0.95$ (Half-life $\approx 13.5$ days; high-frequency news decays quickly).
    * **Intermediate Layer:** $\delta = 0.99$ (Half-life $\approx 69$ days; captures quarterly 10-Q cycles).
    * **Deep Layer:** $\delta = 0.999$ (Half-life $\approx 693$ days; preserves multi-year crisis memories).
-3. **Importance $I(m)$:** Normalized integer weight ($1$ to $10$) assigned at write time by the observing analyst.
+3. **Importance $I(m)$:** Normalized integer weight ($1$ to $10$) assigned at write time by the observing analyst:
+   $$I(m) = \frac{\text{Importance}}{10.0}$$
 
-This ensures that during a banking shock (such as March 2023), the agent recalls historical liquidity contractions rather than focusing solely on yesterday's headline noise.
+This guarantees that during a banking shock (such as March 2023), the agent recalls historical liquidity contractions rather than focusing solely on yesterday's headline noise. Furthermore, memory operations seamlessly support MASS masking: observations stored under `Asset_Delta` are indexed canonically under `NFLX` in the vector database and sanitized on retrieval.
 
 ---
 
@@ -301,11 +316,13 @@ flowchart TD
     Start["Ingest Views JSON & Candidate Tickers"] --> CheckDate{"Simulated Date Active?"}
     CheckDate -- Yes --> LoadSim["Download 2Y Historical Trailing Data ending at SIMULATED_DATE"]
     CheckDate -- No --> LoadLive["Download 2Y Live Historical Data"]
-    LoadSim & LoadLive --> Matrix["Compute Sample Covariance Matrix S & CAPM Equilibrium Prior Pi"]
+    LoadSim --> Matrix["Compute Sample Covariance Matrix S & CAPM Equilibrium Prior Pi"]
+    LoadLive --> Matrix
     Matrix --> BL{"Valid Views Ingested?"}
     BL -- Yes --> SolveBL["Construct Black-Litterman Model: S_bl, ret_bl"]
     BL -- No --> FallbackPrior["Set ret_bl = Pi, S_bl = S"]
-    SolveBL & FallbackPrior --> EF["Efficient Frontier: Maximize Sharpe Ratio (Subject to sum w_i = 1, w_i >= 0)"]
+    SolveBL --> EF["Efficient Frontier: Maximize Sharpe Ratio (Subject to sum w_i = 1, w_i >= 0)"]
+    FallbackPrior --> EF
     EF --> Success{"Optimization Succeeded?"}
     Success -- Yes --> Clean["Clean Weights & Output Markdown Format"]
     Success -- Matrix Singular --> HRP["Trigger HRP Engine: Compute Dendrogram & Hierarchical Risk Parity"]
@@ -334,21 +351,59 @@ If the covariance matrix $\Sigma$ is singular, non-positive definite, or fails m
 
 ## 6. Contamination Control: The MASS Masking Protocol
 
-Evaluating LLM agents on historical data carries a major risk of **look-ahead contamination**—because models may have memorized historical earnings and stock prices during pre-training.
+Evaluating LLM agents on historical data carries a major risk of **parametric look-ahead contamination**—because models trained after 2023 have already memorized historical corporate earnings, product launches, and stock crashes during pre-training.
 
-To safeguard against this, the system incorporates the **Multi-Agent Simulation Scaling (MASS) Masking Protocol** ([`simulation.py`](file:///home/yagya/official_works/minor_project/multi_agent_portfolio/simulation.py)):
+To address this challenge, the system incorporates the **Multi-Agent Simulation Scaling (MASS) Masking Protocol** ([`simulation.py`](file:///home/yagya/official_works/minor_project/multi_agent_portfolio/simulation.py)), providing end-to-end entity and temporal anonymization across both data modalities:
 
 ```mermaid
 flowchart LR
-    Raw["Raw Text: 'Tesla (TSLA) dropped 45% in 2022 due to Musk Twitter acquisition'"] --> Mask["MASS Masking Protocol"]
-    Mask --> Sanitized["Sanitized Text: 'Asset_Alpha dropped 45% in Year_X due to Leadership acquisition'"]
-    Sanitized --> LLM["LLM Agent Reasoning Engine"]
-    LLM --> Decision["Unbiased Signal Generation"]
+    subgraph RawData["Raw Market Feeds"]
+        R1["News: 'Microsoft integrates ChatGPT into Bing in 2023'"]
+        R2["Fundamentals: TSLA PE 70, Margin 15%"]
+        R3["Prices: MSFT $224.65, 50-SMA $238.97"]
+    end
+
+    subgraph MASSShield["MASS Contamination Shield"]
+        M1["Entity Anonymizer: MSFT -> Asset_Beta, TSLA -> Asset_Alpha"]
+        M2["Temporal Anonymizer: 2022/2023 -> Year_X, Q1 -> Period_T"]
+    end
+
+    subgraph AgentPerception["Anonymized Agent Space"]
+        A1["News: 'Asset_Beta integrates ChatGPT into Bing in Year_X'"]
+        A2["Fundamentals: Asset_Alpha PE 70, Margin 15%"]
+        A3["Technical Indicators: Asset_Beta Price $224.65, Bearish Trend"]
+    end
+
+    subgraph DeMaskSolver["De-masking & Convex Optimization"]
+        D1["Views JSON: Asset_Beta +10%, Asset_Alpha -5%"]
+        D2["Reverse Mapping: Asset_Beta -> MSFT, Asset_Alpha -> TSLA"]
+        D3["Black-Litterman Solver on Real Covariance Sigma"]
+    end
+
+    R1 --> M1
+    R2 --> M1
+    M1 --> A1
+    M2 --> A1
+    R2 --> A2
+    R3 --> A3
+    A1 --> D1
+    A2 --> D1
+    A3 --> D1
+    D1 --> D2
+    D2 --> D3
 ```
 
-* **Asset Masking:** Real ticker symbols and corporate names are mapped via regex to generic handles (`TSLA` $\rightarrow$ `Asset_Alpha`, `MSFT` $\rightarrow$ `Asset_Beta`).
-* **Temporal Masking:** Absolute dates are mapped to relative indices (`2022` $\rightarrow$ `Year_X`, `Q3 2022` $\rightarrow$ `Period_T-1`).
-* **Strict Date Pinning:** The simulated environment explicitly freezes system time via `set_simulated_date("YYYY-MM-DD")`, ensuring that all data fetching tools reject any prices or news generated after that date.
+### 6.1. Multi-Modal Masking Implementation
+1. **Unstructured Qualitative Data (News & Fundamentals):**
+   * Real ticker symbols and corporate names are mapped via regex to generic handles (`TSLA` / `Tesla` $\rightarrow$ `Asset_Alpha`, `MSFT` / `Microsoft` $\rightarrow$ `Asset_Beta`).
+   * Absolute dates and years are transformed to relative indices (`2022` / `2023` $\rightarrow$ `Year_X`, `Q1 2023` $\rightarrow$ `Period_T`).
+2. **Structured Numerical Data (Prices & Technical Indicators):**
+   * Technical moving averages (50-day and 200-day SMAs), price velocity, and closing series are computed from true point-in-time market data, but presented to the Quantitative Analyst under anonymized handles (`Asset_Beta`). The agent reasons on statistical trend geometry without knowing company identity.
+3. **Strict Point-in-Time Date Pinning:**
+   * System time is frozen at `set_simulated_date("YYYY-MM-DD")`. Data retrieval queries strictly reject any market or macro news beyond that boundary.
+4. **The Mathematical De-Masking Bridge:**
+   * When the Debate Orchestrator emits expected returns $Q$ on masked assets (`{"Asset_Beta": 0.10, "Asset_Alpha": -0.05}`), `tools/optimization_tools.py` applies reverse lookup (`Asset_Beta` $\rightarrow$ `MSFT`), downloads the genuine trailing covariance matrix $\Sigma$, and computes mathematically optimal allocations via Black-Litterman / HRP.
+   * **Result:** Reasoning is fully insulated from parametric memory, while asset allocation remains mathematically disciplined.
 
 ---
 
@@ -405,11 +460,10 @@ The benchmark data from FinMem (Table 2, Page 14) is juxtaposed with our Multi-A
 ### 7.3. Sub-Period Allocation & Trace Dynamics
 
 ```mermaid
-timeline
-    title Multi-Agent Strategic Asset Progression
-    section Period 1 (Nov 22 - Jan 23) : Severe Bear Shock : TSLA -45.9%, COIN -44.1% : HRP defensive allocation : Multi-Agent: -9.77% vs EW: -21.09% (+11.32% Alpha)
-    section Period 2 (Jan 23 - Mar 23) : Tech Rebound : Broad-based recovery : Balanced allocation : Multi-Agent: +25.01% vs SPY: +4.05%
-    section Period 3 (Mar 23 - May 23) : Generative AI Wave : OpenAI Bing & Copilot Integration : 100% MSFT allocation : Multi-Agent: +24.77% vs EW: +1.65% (+23.12% Alpha)
+flowchart LR
+    P1["Period 1: Nov 22 - Jan 23<br/><b>Bear Market Defense</b><br/>TSLA -45.9%, COIN -44.1%<br/><i>HRP defensive: -9.77% vs EW -21.09% (+11.32% Alpha)</i>"]
+    --> P2["Period 2: Jan 23 - Mar 23<br/><b>Tech Rebound Capture</b><br/>Broad-based recovery<br/><i>Multi-Agent: +25.01% vs SPY +4.05%</i>"]
+    --> P3["Period 3: Mar 23 - May 23<br/><b>Generative AI Wave</b><br/>MSFT 100% allocation<br/><i>Multi-Agent: +24.77% vs EW +1.65% (+23.12% Alpha)</i>"]
 ```
 
 #### Period 1: November 1, 2022 to January 1, 2023 (Bear Market Defense)
@@ -515,11 +569,14 @@ OPENROUTER_API_KEY=your_openrouter_key_here
 # Activate virtual environment
 source venv/bin/activate
 
-# 1. Run live single-period analysis
-python main.py
+# 1. Run instant quantitative statistical evaluation (reproduces Table 2 without GPU)
+python backtest_engine.py --eval-only
 
-# 2. Run full 3-period historical backtesting simulation
-python backtest_engine.py
+# 2. Run full 3-period live multi-agent simulation with MASS masking active
+python backtest_engine.py --live
+
+# 3. Run single-period live interactive analysis
+python main.py
 ```
 
 ---

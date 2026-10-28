@@ -4,6 +4,7 @@ from crewai.tools import tool
 import datetime
 import math
 import os
+from simulation import unmask_ticker, mask_text
 
 # ---------------------------------------------------------------------------
 # Semantic Embedding via ChromaDB's built-in all-MiniLM-L6-v2 (384-dim)
@@ -46,8 +47,9 @@ def store_memory(ticker: str, observation: str, importance: int) -> str:
     - importance: Integer 1-10 (1-3: Shallow, 4-7: Intermediate, 8-10: Deep).
     """
     try:
+        canonical_ticker = unmask_ticker(ticker) or ticker
         effective_dt = _get_effective_datetime()
-        doc_id = f"{ticker}_{effective_dt.isoformat()}_{os.urandom(4).hex()}"
+        doc_id = f"{canonical_ticker}_{effective_dt.isoformat()}_{os.urandom(4).hex()}"
         
         # Classify the memory layer based on importance
         if importance <= 3:
@@ -60,7 +62,7 @@ def store_memory(ticker: str, observation: str, importance: int) -> str:
         collection.add(
             documents=[observation],
             metadatas=[{
-                "ticker": ticker,
+                "ticker": canonical_ticker,
                 "importance": importance,
                 "layer": layer,
                 "timestamp": effective_dt.timestamp(),
@@ -78,6 +80,7 @@ def retrieve_memory(query: str, ticker: str, n_results: int = 3) -> str:
     Retrieves historical context for a ticker using a composite score of Relevancy, Recency, and Importance.
     """
     try:
+        canonical_ticker = unmask_ticker(ticker) or ticker
         if collection.count() == 0:
             return f"No relevant past memories found for {ticker} (memory is empty)."
             
@@ -87,7 +90,7 @@ def retrieve_memory(query: str, ticker: str, n_results: int = 3) -> str:
         results = collection.query(
             query_texts=[query],
             n_results=fetch_n,
-            where={"ticker": ticker},
+            where={"ticker": canonical_ticker},
             include=["documents", "metadatas", "distances"]
         )
         
@@ -145,10 +148,10 @@ def retrieve_memory(query: str, ticker: str, n_results: int = 3) -> str:
         # Sort by highest composite score
         scored_memories.sort(key=lambda x: x['score'], reverse=True)
         
-        memories = "Historical Memories (Ranked by Semantic Relevancy + Layered Time Decay):\n"
+        memories = f"Historical Memories for {ticker} (Ranked by Semantic Relevancy + Layered Time Decay):\n"
         for mem in scored_memories[:n_results]:
             memories += f"- [{mem['date']}] (Layer: {mem['layer']}, Importance: {mem['importance']}, Composite Score: {mem['score']:.2f}): {mem['doc']}\n"
             
-        return memories
+        return mask_text(memories)
     except Exception as e:
         return f"No relevant past memories found for {ticker} (Memory retrieval unavailable right now)."

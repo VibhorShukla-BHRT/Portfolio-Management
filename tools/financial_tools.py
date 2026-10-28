@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import json
 import os
-from simulation import mask_text, is_masking_active, get_ticker_mask
+from simulation import mask_text, is_masking_active, get_ticker_mask, unmask_ticker
 
 # Base directory for data
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +25,8 @@ def fetch_stock_data(ticker: str) -> str:
     Useful for technical analysis and observing price trends.
     """
     try:
-        stock = yf.Ticker(ticker)
+        real_ticker = unmask_ticker(ticker) or ticker
+        stock = yf.Ticker(real_ticker)
         # We need historical data ending at SIMULATED_DATE
         end_date = pd.to_datetime(SIMULATED_DATE)
         start_date = end_date - pd.DateOffset(months=6)
@@ -45,11 +46,12 @@ def fetch_company_fundamentals(ticker: str) -> str:
     Fetches fundamental financial data for a given stock ticker as it was on the simulated date.
     """
     try:
+        real_ticker = unmask_ticker(ticker) or ticker
         with open(FUNDS_PATH, 'r') as f:
             funds_data = json.load(f)
             
-        if SIMULATED_DATE in funds_data and ticker in funds_data[SIMULATED_DATE]:
-            data = funds_data[SIMULATED_DATE][ticker]
+        if SIMULATED_DATE in funds_data and real_ticker in funds_data[SIMULATED_DATE]:
+            data = funds_data[SIMULATED_DATE][real_ticker]
             return mask_text(f"Fundamentals for {ticker} on {SIMULATED_DATE}:\n- PE Ratio: {data['PE']}\n- Profit Margin: {data['Margin']}\n")
         else:
             return mask_text(f"Fundamental data unavailable for {ticker} on {SIMULATED_DATE}. Assume average sector performance.")
@@ -63,7 +65,8 @@ def calculate_technical_indicators(ticker: str) -> str:
     for a given stock ticker up to the simulated date to determine trend direction.
     """
     try:
-        stock = yf.Ticker(ticker)
+        real_ticker = unmask_ticker(ticker) or ticker
+        stock = yf.Ticker(real_ticker)
         end_date = pd.to_datetime(SIMULATED_DATE)
         start_date = end_date - pd.DateOffset(years=1)
         
@@ -99,11 +102,12 @@ def fetch_stock_news(ticker: str) -> str:
     Useful to gauge market sentiment and recent company-specific events.
     """
     try:
+        real_ticker = unmask_ticker(ticker) or ticker
         with open(NEWS_PATH, 'r') as f:
             news_data = json.load(f)
             
-        if SIMULATED_DATE in news_data and ticker in news_data[SIMULATED_DATE]:
-            headlines = news_data[SIMULATED_DATE][ticker]
+        if SIMULATED_DATE in news_data and real_ticker in news_data[SIMULATED_DATE]:
+            headlines = news_data[SIMULATED_DATE][real_ticker]
             result = f"Recent news for {ticker} (leading up to {SIMULATED_DATE}):\n"
             for h in headlines:
                 result += f"- {h}\n"

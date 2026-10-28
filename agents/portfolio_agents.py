@@ -38,6 +38,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
+            max_iter=2,
             tools=[screen_top_assets],
             llm=self.llm
         )
@@ -52,6 +53,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
+            max_iter=6,
             tools=[fetch_stock_data, calculate_technical_indicators, retrieve_memory, store_memory],
             llm=self.llm
         )
@@ -66,6 +68,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
+            max_iter=6,
             tools=[fetch_company_fundamentals, fetch_stock_news, retrieve_memory],
             llm=self.llm
         )
@@ -80,6 +83,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
+            max_iter=6,
             tools=[fetch_company_fundamentals, fetch_stock_news, retrieve_memory],
             llm=self.llm
         )
@@ -94,6 +98,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
+            max_iter=2,
             llm=self.llm
         )
 
@@ -107,6 +112,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
+            max_iter=4,
             tools=[fetch_stock_news, retrieve_memory],
             llm=self.llm
         )
@@ -121,6 +127,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
+            max_iter=3,
             tools=[calculate_optimal_portfolio],
             llm=self.llm
         )

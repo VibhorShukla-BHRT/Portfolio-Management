@@ -2,5 +2,10 @@ crewai
 langchain
 yfinance
 pandas
+numpy
 python-dotenv
+chromadb
+pypfopt
+json_repair
+scipy
 duckduckgo-search

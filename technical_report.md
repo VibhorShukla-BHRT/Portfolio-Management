@@ -52,9 +52,12 @@ flowchart TD
         O1["Universe Ingestion (TSLA, MSFT, AMZN, NFLX, COIN)"] --> O2["Quant Analyst (SMAs & Volatility)"]
         O1 --> O3["Bull Researcher (Upside Catalysts)"]
         O1 --> O4["Bear Researcher (Downside Risks)"]
-        O3 & O4 --> O5["Debate Orchestrator (Reconciliation)"]
+        O3 --> O5["Debate Orchestrator (Reconciliation)"]
+        O4 --> O5
         O5 --> O6["ChromaDB Layered Memory (Regime Recall)"]
-        O2 & O5 & O6 --> O7["Risk Manager (Drawdown & Vol Guardrails)"]
+        O2 --> O7["Risk Manager (Drawdown & Vol Guardrails)"]
+        O5 --> O7
+        O6 --> O7
         O7 --> O8["Convex Optimization Engine (Black-Litterman & HRP)"]
         O8 --> O9["Continuous Vector: [w_TSLA, w_MSFT, w_AMZN, w_NFLX, w_COIN]"]
     end
@@ -168,11 +171,10 @@ The benchmark performance from the FinMem paper (Table 2, Page 14) is juxtaposed
 ## 5. Granular Sub-Period Dynamics & Agent Trace Analysis
 
 ```mermaid
-timeline
-    title Multi-Agent Allocation & Market Regime Progression
-    section Period 1 (Nov 22 - Jan 23) : Severe Bear Market : TSLA -45.9%, COIN -44.1% : HRP defensive allocation : Multi-Agent: -9.77% vs EW: -21.09% (+11.32% Alpha)
-    section Period 2 (Jan 23 - Mar 23) : Market Recovery : Broad-based rally across tech : Balanced diversified posture : Multi-Agent: +25.01% vs SPY: +4.05%
-    section Period 3 (Mar 23 - May 23) : Generative AI Catalyst : OpenAI & Bing Integration : Bull debate triggers 100% MSFT view : Multi-Agent: +24.77% vs EW: +1.65% (+23.12% Alpha)
+flowchart LR
+    P1["Period 1: Nov 22 - Jan 23<br/><b>Bear Market Defense</b><br/>TSLA -45.9%, COIN -44.1%<br/><i>HRP defensive: -9.77% vs EW -21.09% (+11.32% Alpha)</i>"]
+    --> P2["Period 2: Jan 23 - Mar 23<br/><b>Market Recovery</b><br/>Broad-based tech rally<br/><i>Multi-Agent: +25.01% vs SPY +4.05%</i>"]
+    --> P3["Period 3: Mar 23 - May 23<br/><b>Generative AI Catalyst</b><br/>Bull debate triggers 100% MSFT<br/><i>Multi-Agent: +24.77% vs EW +1.65% (+23.12% Alpha)</i>"]
 ```
 
 ### Period 1: November 1, 2022 to January 1, 2023 (Downside Capital Preservation)
