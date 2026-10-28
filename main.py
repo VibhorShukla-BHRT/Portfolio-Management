@@ -10,11 +10,8 @@ load_dotenv()
 
 def main():
     print("Welcome to the Next-Generation Multi-Agent Portfolio Management System!")
-    print("Initializing AI Agents with OpenRouter and Layered Memory...")
-    
-    if not os.getenv("OPENROUTER_API_KEY"):
-        print("\nERROR: OPENROUTER_API_KEY is not set in the environment.")
-        return
+    backend_info = f"custom endpoint ({os.getenv('LLM_BASE_URL')})" if os.getenv("LLM_BASE_URL") else "OpenRouter"
+    print(f"Initializing AI Agents with {backend_info} and Layered Memory...")
 
     # Initialize Agents and Tasks classes
     agents = PortfolioAgents()
@@ -43,7 +40,7 @@ def main():
         agents=[screener, quant_agent, bull_agent, bear_agent, debate_agent, risk_agent, portfolio_agent],
         tasks=[screen_task, quant_task, bull_task, bear_task, debate_task, risk_task, strategy_task],
         process=Process.sequential,
-        verbose=False
+        verbose=True
     )
 
     print("Starting the portfolio analysis process...")

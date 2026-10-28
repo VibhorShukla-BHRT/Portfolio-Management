@@ -13,17 +13,40 @@ import tools.financial_tools as ft
 
 load_dotenv()
 
-def extract_weights(markdown_text):
+def extract_weights(markdown_text, valid_tickers=None):
     """
     Parses the generated markdown to extract the portfolio weights.
-    Looks for lines like '- AAPL: 20.00%' or 'AAPL: 0.20'
+    Matches lines like '- AAPL: 20.00%', '| **MSFT** | 39.27% |', or JSON formats.
+    Filters out invalid symbols to prevent SMA/HIGH/TOTAL false positives.
     """
     weights = {}
-    # Simple regex to find ticker and percentage
-    pattern = re.compile(r'([A-Z]{3,5}).*?(\d+\.\d+)\s*%')
-    matches = pattern.findall(markdown_text)
-    for ticker, weight in matches:
-        weights[ticker] = float(weight) / 100.0
+
+    # 1. Markdown table format: | **MSFT** | 39.27% | or | MSFT | 39.27% |
+    table_pattern = re.compile(r'\|\s*\*{0,2}([A-Z]{2,5})\*{0,2}\s*\|\s*(\d+(?:\.\d+)?)\s*%')
+    for ticker, weight in table_pattern.findall(markdown_text):
+        if valid_tickers is None or ticker in valid_tickers:
+            weights[ticker] = float(weight) / 100.0
+
+    # 2. Colon bullet format: - MSFT: 39.27% or MSFT: 39.27%
+    if not weights:
+        pattern = re.compile(r'[-\*\s]*\b([A-Z]{2,5})\b\s*:\s*(\d+(?:\.\d+)?)\s*%')
+        matches = pattern.findall(markdown_text)
+        for ticker, weight in matches:
+            if valid_tickers is None or ticker in valid_tickers:
+                weights[ticker] = float(weight) / 100.0
+            
+    # 3. Fallback: check for decimal or JSON format if percentage pattern was missed
+    if not weights and valid_tickers:
+        json_pattern = re.compile(r'["\']([A-Z]{2,5})["\']\s*:\s*(\d+(?:\.\d+)?)')
+        for ticker, weight_val in json_pattern.findall(markdown_text):
+            if ticker in valid_tickers:
+                val = float(weight_val)
+                weights[ticker] = val if val <= 1.0 else val / 100.0
+
+    total_w = sum(weights.values())
+    if total_w > 0:
+        weights = {t: round(w / total_w, 4) for t, w in weights.items()}
+
     return weights
 
 def calculate_period_return(weights, start_date, end_date):
@@ -38,20 +61,26 @@ def calculate_period_return(weights, start_date, end_date):
     
     if data.empty:
         return 0.0
+    data = data.ffill().bfill()
         
     # Calculate percentage return for each asset over the period
     if len(tickers) == 1:
-        asset_returns = (data.iloc[-1] - data.iloc[0]) / data.iloc[0]
-        return asset_returns * weights[tickers[0]]
+        ticker = tickers[0]
+        first_val = float(data.iloc[0].item() if hasattr(data.iloc[0], 'item') else data.iloc[0])
+        last_val = float(data.iloc[-1].item() if hasattr(data.iloc[-1], 'item') else data.iloc[-1])
+        asset_return = (last_val - first_val) / first_val if first_val != 0 else 0.0
+        return float(asset_return * weights[ticker])
         
     asset_returns = (data.iloc[-1] - data.iloc[0]) / data.iloc[0]
     
     portfolio_return = 0.0
     for ticker in tickers:
         if ticker in asset_returns:
-            portfolio_return += asset_returns[ticker] * weights.get(ticker, 0)
+            val = asset_returns[ticker]
+            ret_val = float(val.item() if hasattr(val, 'item') else val)
+            portfolio_return += ret_val * weights.get(ticker, 0)
             
-    return portfolio_return
+    return float(portfolio_return)
 
 def main():
     print("Initializing Multi-Agent Portfolio Simulation Engine (MASS)...\n")
@@ -97,13 +126,14 @@ def main():
             agents=[screener, quant_agent, bull_agent, bear_agent, debate_agent, risk_agent, portfolio_agent],
             tasks=[screen_task, quant_task, bull_task, bear_task, debate_task, risk_task, strategy_task],
             process=Process.sequential,
-            verbose=False
+            verbose=True
         )
         
         print("Running Agents (Debate, Optimization, Risk Assessment)...")
         result = financial_crew.kickoff()
         
-        weights = extract_weights(str(result))
+        test_universe = ['TSLA', 'MSFT', 'AMZN', 'NFLX', 'COIN']
+        weights = extract_weights(str(result), valid_tickers=test_universe)
         print(f"Extracted Weights: {weights}")
         
         period_ret = calculate_period_return(weights, start_date, end_date)
@@ -116,6 +146,10 @@ def main():
             "Weights": weights,
             "Period_Return": period_ret
         })
+        
+        # Save progress after each period
+        with open("backtest_results.json", "w") as f:
+            json.dump(results_log, f, indent=4)
         
     print("\n==================================================")
     print("FINAL SIMULATION RESULTS")

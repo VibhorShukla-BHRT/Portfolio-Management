@@ -7,10 +7,24 @@ from tools.screening_tools import screen_top_assets
 
 class PortfolioAgents:
     def __init__(self):
+        if os.getenv("LLM_BASE_URL"):
+            model = os.getenv("LLM_MODEL", "ollama/ritu-27b:latest")
+            api_key = os.getenv("LLM_API_KEY", "ollama")
+            base_url = os.getenv("LLM_BASE_URL")
+        elif os.getenv("OPENROUTER_API_KEY"):
+            model = os.getenv("LLM_MODEL", "openrouter/openrouter/free")
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            base_url = "https://openrouter.ai/api/v1"
+        else:
+            model = os.getenv("LLM_MODEL", "ollama/ritu-27b:latest")
+            api_key = os.getenv("LLM_API_KEY", "ollama")
+            base_url = "https://focus-copyrighted-clinic-behind.trycloudflare.com"
+        
         self.llm = LLM(
-            model="openrouter/openrouter/free",
-            api_key=os.getenv("OPENROUTER_API_KEY"),
-            base_url="https://openrouter.ai/api/v1"
+            model=model,
+            api_key=api_key,
+            base_url=base_url,
+            timeout=300
         )
 
     def pre_selection_agent(self):
@@ -79,7 +93,7 @@ class PortfolioAgents:
                 "force them to weigh opposing facts, and strip away emotional bias and hallucinations to produce a definitive qualitative view on the asset."
             ),
             verbose=False,
-            allow_delegation=True,
+            allow_delegation=False,
             llm=self.llm
         )
 
@@ -106,7 +120,7 @@ class PortfolioAgents:
                 "format them into a JSON of expected absolute returns, and execute the quantitative optimization tool to construct the portfolio mathematically."
             ),
             verbose=False,
-            allow_delegation=True,
+            allow_delegation=False,
             tools=[calculate_optimal_portfolio],
             llm=self.llm
         )
