@@ -5,11 +5,13 @@ from agents.portfolio_agents import PortfolioAgents
 from tasks.portfolio_tasks import PortfolioTasks
 import yfinance as yf
 import pandas as pd
+import numpy as np
 import json
 import re
 
 # We must import financial_tools to set the simulated date
 import tools.financial_tools as ft
+from simulation import activate_masking, deactivate_masking, unmask_views
 
 load_dotenv()
 

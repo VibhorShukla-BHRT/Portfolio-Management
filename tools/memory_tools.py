@@ -1,29 +1,40 @@
 import chromadb
-from chromadb import Documents, EmbeddingFunction, Embeddings
+from chromadb.utils import embedding_functions
 from crewai.tools import tool
 import datetime
 import math
 import os
-import hashlib
 
-class SimpleHashEmbeddingFunction(EmbeddingFunction):
-    def __call__(self, input: Documents) -> Embeddings:
-        embeddings = []
-        for text in input:
-            h = hashlib.sha256(text.encode()).digest()
-            vec = [float(b) / 255.0 for b in h] * 12 # 384 dimensions
-            embeddings.append(vec)
-        return embeddings
+# ---------------------------------------------------------------------------
+# Semantic Embedding via ChromaDB's built-in all-MiniLM-L6-v2 (384-dim)
+# This replaces the previous SHA-256 hash embedding, which produced zero
+# semantic similarity.  The ONNX model ships with chromadb and requires
+# no additional dependencies.
+# ---------------------------------------------------------------------------
 
-# Initialize ChromaDB locally
+# Initialize ChromaDB locally with semantic embeddings
 db_path = os.path.join(os.getcwd(), ".chroma_db")
 chroma_client = chromadb.PersistentClient(path=db_path)
 
-collection_name = "financial_memory_v2"
+semantic_ef = embedding_functions.DefaultEmbeddingFunction()  # all-MiniLM-L6-v2
+
+collection_name = "financial_memory_v3"  # new collection — incompatible with v2 hash vectors
 collection = chroma_client.get_or_create_collection(
     name=collection_name,
-    embedding_function=SimpleHashEmbeddingFunction()
+    embedding_function=semantic_ef
 )
+
+def _get_effective_datetime():
+    """Return the simulated date if set, otherwise current datetime."""
+    try:
+        import tools.financial_tools as ft
+        sim = getattr(ft, 'SIMULATED_DATE', None)
+        if sim:
+            return datetime.datetime.strptime(sim, "%Y-%m-%d")
+    except Exception:
+        pass
+    return datetime.datetime.now()
+
 
 @tool("Store Long Term Memory")
 def store_memory(ticker: str, observation: str, importance: int) -> str:
@@ -35,7 +46,8 @@ def store_memory(ticker: str, observation: str, importance: int) -> str:
     - importance: Integer 1-10 (1-3: Shallow, 4-7: Intermediate, 8-10: Deep).
     """
     try:
-        doc_id = f"{ticker}_{datetime.datetime.now().isoformat()}"
+        effective_dt = _get_effective_datetime()
+        doc_id = f"{ticker}_{effective_dt.isoformat()}_{os.urandom(4).hex()}"
         
         # Classify the memory layer based on importance
         if importance <= 3:
@@ -47,7 +59,13 @@ def store_memory(ticker: str, observation: str, importance: int) -> str:
             
         collection.add(
             documents=[observation],
-            metadatas=[{"ticker": ticker, "importance": importance, "layer": layer, "timestamp": datetime.datetime.now().timestamp(), "date": datetime.datetime.now().isoformat()}],
+            metadatas=[{
+                "ticker": ticker,
+                "importance": importance,
+                "layer": layer,
+                "timestamp": effective_dt.timestamp(),
+                "date": effective_dt.isoformat()
+            }],
             ids=[doc_id]
         )
         return f"Successfully stored memory for {ticker} in the {layer} layer."
@@ -76,12 +94,23 @@ def retrieve_memory(query: str, ticker: str, n_results: int = 3) -> str:
         if not results['documents'] or len(results['documents'][0]) == 0:
             return f"No relevant past memories found for {ticker}."
             
-        current_time = datetime.datetime.now().timestamp()
+        effective_dt = _get_effective_datetime()
+        current_time = effective_dt.timestamp()
         
         # Hyperparameters for the composite score
-        alpha = 1.0 # Recency weight
-        beta = 1.0  # Relevancy weight
-        gamma = 0.5 # Importance weight
+        alpha = 1.0   # Recency weight
+        beta  = 1.0   # Relevancy weight (now meaningful with semantic embeddings)
+        gamma = 0.5   # Importance weight
+        
+        # Layer-specific exponential decay rates (aligned with documentation)
+        # Shallow  δ=0.95 → half-life ≈ 13.5 days  (high-freq news decays quickly)
+        # Intermediate δ=0.99 → half-life ≈ 69 days (quarterly 10-Q cycles)
+        # Deep     δ=0.999 → half-life ≈ 693 days   (multi-year crisis memories)
+        DECAY_RATES = {
+            "shallow":      0.95,
+            "intermediate": 0.99,
+            "deep":         0.999,
+        }
         
         scored_memories = []
         
@@ -90,26 +119,19 @@ def retrieve_memory(query: str, ticker: str, n_results: int = 3) -> str:
             meta = results['metadatas'][0][idx]
             distance = results['distances'][0][idx] if 'distances' in results and results['distances'] else 1.0
             
-            # 1. Relevancy (inverted distance - lower distance is better)
+            # 1. Semantic Relevancy S(m) = 1 / (1 + D(q, d_m))
             relevancy = 1.0 / (1.0 + distance)
             
-            # 2. Recency with layer-specific exponential decay
-            time_elapsed_days = (current_time - meta['timestamp']) / 86400.0
+            # 2. Recency with layer-specific exponential decay R(m) = δ^Δt
+            time_elapsed_days = max(0, (current_time - meta['timestamp']) / 86400.0)
             layer = meta.get('layer', 'intermediate')
-            
-            if layer == "shallow":
-                delta = 0.1 # Decays significantly over a few weeks
-            elif layer == "intermediate":
-                delta = 0.01 # Decays over a few months
-            else: # deep
-                delta = 0.0001 # Near-zero decay
-                
-            recency = math.exp(-delta * time_elapsed_days)
+            delta = DECAY_RATES.get(layer, 0.99)
+            recency = delta ** time_elapsed_days
             
             # 3. Importance (normalized 0.1 to 1.0)
             importance_score = meta['importance'] / 10.0
             
-            # Calculate composite score S_E
+            # Composite score S_E = α·R(m) + β·S(m) + γ·I(m)
             S_E = (alpha * recency) + (beta * relevancy) + (gamma * importance_score)
             
             scored_memories.append({
@@ -123,7 +145,7 @@ def retrieve_memory(query: str, ticker: str, n_results: int = 3) -> str:
         # Sort by highest composite score
         scored_memories.sort(key=lambda x: x['score'], reverse=True)
         
-        memories = "Historical Memories (Ranked by Relevancy + Layered Time Decay):\n"
+        memories = "Historical Memories (Ranked by Semantic Relevancy + Layered Time Decay):\n"
         for mem in scored_memories[:n_results]:
             memories += f"- [{mem['date']}] (Layer: {mem['layer']}, Importance: {mem['importance']}, Composite Score: {mem['score']:.2f}): {mem['doc']}\n"
             

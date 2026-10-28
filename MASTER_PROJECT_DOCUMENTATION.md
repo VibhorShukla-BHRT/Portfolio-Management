@@ -1,12 +1,16 @@
 # Autonomous Multi-Agent Portfolio Management System (MASS)
 ## Comprehensive Master Documentation & Architecture Specification
 
-> **System Name:** Multi-Agent Simulation Scaling (MASS) Portfolio Architecture  
-> **Core Framework:** CrewAI + PyPortfolioOpt + ChromaDB + Local/OpenRouter LLMs  
-> **Key Innovation:** Decoupled Qualitative Adversarial LLM Debate from Deterministic Convex Optimization (Black-Litterman / Hierarchical Risk Parity) with Layered Vector Memory  
-> **Empirical Reference:** Benchmark Evaluation against *FinMem: A Performance-Enhanced LLM Trading Agent with Layered Memory and Character Design* (Yu et al., 2023)  
-> **Repository:** `/home/yagya/official_works/minor_project/multi_agent_portfolio`
+*Created By: Vibhor Shukla, Roll number: 23115107, Semester 7th, for academic submission at NIT Raipur.*
 
+
+> **System Name:** Multi-Agent Simulation Scaling (MASS) Portfolio Architecture  
+> **Core Framework:** CrewAI + PyPortfolioOpt + ChromaDB + Open Source LLM (hosted locally using Ollama)  
+> **Key Innovation:** Decoupled Qualitative Adversarial LLM Debate from Deterministic Convex Optimization (Black-Litterman / Hierarchical Risk Parity) with Layered Vector Memory  
+> **Empirical Reference:** Benchmark Evaluation against *FinMem: A Performance-Enhanced LLM Trading Agent with Layered Memory and Character Design* (Yu et al., 2023) [read research paper](https://arxiv.org/abs/2311.13743) 
+> **LLM Model (Open Source) used for backtesting:** Qwen3.8-27B 
+> **Link to model weights (Open Source):** [HuggingFace](https://huggingface.co/Qwen/Qwen3.8-27B)
+> **Link to Project codebase on GitHub:** [GitHub](https://github.com/VibhorShukla-BHRT/Portfolio-Management)
 ---
 
 ## 1. Executive Summary & Problem Formulation

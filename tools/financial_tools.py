@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import json
 import os
+from simulation import mask_text, is_masking_active, get_ticker_mask
 
 # Base directory for data
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,9 +35,9 @@ def fetch_stock_data(ticker: str) -> str:
             return f"No historical data found for {ticker} up to {SIMULATED_DATE}."
         
         hist_str = hist[['Close']].tail(10).to_string() # Just show last 10 days to save tokens
-        return f"Historical Data for {ticker} (leading up to {SIMULATED_DATE}):\n{hist_str}"
+        return mask_text(f"Historical Data for {ticker} (leading up to {SIMULATED_DATE}):\n{hist_str}")
     except Exception as e:
-        return f"Error fetching stock data for {ticker}: {str(e)}"
+        return mask_text(f"Error fetching stock data for {ticker}: {str(e)}")
 
 @tool("Fetch Company Fundamentals")
 def fetch_company_fundamentals(ticker: str) -> str:
@@ -49,11 +50,11 @@ def fetch_company_fundamentals(ticker: str) -> str:
             
         if SIMULATED_DATE in funds_data and ticker in funds_data[SIMULATED_DATE]:
             data = funds_data[SIMULATED_DATE][ticker]
-            return f"Fundamentals for {ticker} on {SIMULATED_DATE}:\n- PE Ratio: {data['PE']}\n- Profit Margin: {data['Margin']}\n"
+            return mask_text(f"Fundamentals for {ticker} on {SIMULATED_DATE}:\n- PE Ratio: {data['PE']}\n- Profit Margin: {data['Margin']}\n")
         else:
-            return f"Fundamental data unavailable for {ticker} on {SIMULATED_DATE}. Assume average sector performance."
+            return mask_text(f"Fundamental data unavailable for {ticker} on {SIMULATED_DATE}. Assume average sector performance.")
     except Exception as e:
-        return f"Error fetching fundamentals for {ticker}: {str(e)}"
+        return mask_text(f"Error fetching fundamentals for {ticker}: {str(e)}")
 
 @tool("Calculate Technical Indicators")
 def calculate_technical_indicators(ticker: str) -> str:
@@ -87,9 +88,9 @@ def calculate_technical_indicators(ticker: str) -> str:
             f"- 200-Day SMA: ${sma_200:.2f}\n"
             f"- Long-Term Trend: {trend}\n"
         )
-        return result
+        return mask_text(result)
     except Exception as e:
-        return f"Error calculating technical indicators for {ticker}: {str(e)}"
+        return mask_text(f"Error calculating technical indicators for {ticker}: {str(e)}")
 
 @tool("Fetch Stock News")
 def fetch_stock_news(ticker: str) -> str:
@@ -106,8 +107,8 @@ def fetch_stock_news(ticker: str) -> str:
             result = f"Recent news for {ticker} (leading up to {SIMULATED_DATE}):\n"
             for h in headlines:
                 result += f"- {h}\n"
-            return result
+            return mask_text(result)
         else:
-            return f"No significant news found for {ticker} around {SIMULATED_DATE}."
+            return mask_text(f"No significant news found for {ticker} around {SIMULATED_DATE}.")
     except Exception as e:
-        return f"Error fetching news for {ticker}: {str(e)}"
+        return mask_text(f"Error fetching news for {ticker}: {str(e)}")
