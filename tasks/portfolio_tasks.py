@@ -14,19 +14,19 @@ class PortfolioTasks:
     def quantitative_analysis_task(self, agent):
         return Task(
             description=(
-                "For the candidate tickers provided by the Pre-Selection Agent, use calculate_technical_indicators "
-                "to evaluate 50-day SMA, 200-day SMA, and trend direction. Query long-term memory for relevant technical analogs, "
-                "and store any notable technical breakout. Then synthesize a concise quantitative report."
+                "For the candidate tickers provided by the Pre-Selection Agent, call calculate_technical_indicators "
+                "(passing the tickers as a comma-separated list or individually) to evaluate 50-day SMA, 200-day SMA, and trend direction. "
+                "Synthesize a concise quantitative report in at most 3 paragraphs."
             ),
-            expected_output="A quantitative analysis report detailing current indicators and historical context for each candidate ticker.",
+            expected_output="A concise quantitative analysis report detailing current indicators and trends for each candidate ticker.",
             agent=agent
         )
 
     def bull_analysis_task(self, agent):
         return Task(
             description=(
-                "For the candidate tickers, use fetch_company_fundamentals and fetch_stock_news to identify growth catalysts, "
-                "positive earnings surprises, and macro tailwinds. Retrieve past bullish memories and produce a focused Bull thesis."
+                "For the candidate tickers, call fetch_company_fundamentals, fetch_stock_news, and retrieve_memory (passing tickers comma-separated) "
+                "to identify growth catalysts, earnings momentum, and macro tailwinds. Produce a concise, high-impact Bull thesis in 2 to 3 paragraphs."
             ),
             expected_output="A report exclusively detailing the bullish arguments and catalysts for each ticker.",
             agent=agent
@@ -35,8 +35,8 @@ class PortfolioTasks:
     def bear_analysis_task(self, agent):
         return Task(
             description=(
-                "For the candidate tickers, use fetch_company_fundamentals and fetch_stock_news to examine debt rollover risks, "
-                "margin pressures, and regulatory headwinds. Retrieve past bearish memories and produce a focused Bear anti-thesis."
+                "For the candidate tickers, call fetch_company_fundamentals, fetch_stock_news, and retrieve_memory (passing tickers comma-separated) "
+                "to examine debt risks, margin pressures, and regulatory headwinds. Produce a concise, high-impact Bear anti-thesis in 2 to 3 paragraphs."
             ),
             expected_output="A report exclusively detailing the bearish arguments, risks, and headwinds for each ticker.",
             agent=agent
@@ -46,7 +46,7 @@ class PortfolioTasks:
         return Task(
             description=(
                 "Review the conflicting reports from the Bull and Bear Researchers, as well as the Quantitative Analyst. "
-                "Synthesize an objective, final view on each ticker's expected directional performance. "
+                "Synthesize an objective, balanced view on each ticker's expected directional performance. "
                 "Conclude with a JSON object strictly formatted as: {'TICKER1': 0.05, 'TICKER2': -0.02, ...}."
             ),
             expected_output=(
@@ -60,7 +60,7 @@ class PortfolioTasks:
         return Task(
             description=(
                 "Review the finalized views from the Debate Orchestrator. Assess tail risk and structural resilience. "
-                "If downside protection is severely compromised, provide a warning to the Chief Portfolio Manager."
+                "Provide a brief risk assessment and guardrails for the Chief Portfolio Manager."
             ),
             expected_output="A risk assessment report evaluating the safety of the proposed views.",
             agent=agent
@@ -70,11 +70,11 @@ class PortfolioTasks:
         return Task(
             description=(
                 "Review the Debate Orchestrator's views JSON and candidate tickers. "
-                "Invoke calculate_optimal_portfolio tool passing the views JSON and tickers list. "
+                "Invoke calculate_optimal_portfolio tool passing the views_json and tickers_json. "
                 "Do NOT hallucinate numerical weights yourself; output the exact weights produced by the tool."
             ),
             expected_output=(
-                "A finalized Portfolio Management Strategy Document in markdown containing executive summary and the exact mathematical weights."
+                "A finalized Portfolio Management Strategy Document in markdown containing executive summary and the exact mathematical weights table."
             ),
             agent=agent
         )

@@ -7,17 +7,21 @@ load_dotenv()
 
 def test_llm():
     if os.getenv("LLM_BASE_URL"):
-        model = os.getenv("LLM_MODEL", "openai/ritu-27b")
+        model = os.getenv("LLM_MODEL", "ollama/ritu-27b:latest")
         base_url = os.getenv("LLM_BASE_URL")
-        api_key = os.getenv("LLM_API_KEY", "sk-no-key-required")
+        api_key = os.getenv("LLM_API_KEY", "ollama")
     elif os.getenv("OPENROUTER_API_KEY"):
-        model = os.getenv("LLM_MODEL", "openrouter/openrouter/free")
+        candidate_model = os.getenv("OPENROUTER_MODEL") or os.getenv("LLM_MODEL", "")
+        if not candidate_model or candidate_model.startswith("ollama"):
+            model = "openrouter/openrouter/free"
+        else:
+            model = candidate_model
         base_url = "https://openrouter.ai/api/v1"
         api_key = os.getenv("OPENROUTER_API_KEY")
     else:
-        model = os.getenv("LLM_MODEL", "openai/ritu-27b")
-        base_url = "https://kaggle-ritu.tail034057.ts.net/v1"
-        api_key = os.getenv("LLM_API_KEY", "sk-no-key-required")
+        print("ERROR: Neither LLM_BASE_URL nor OPENROUTER_API_KEY is configured in .env.")
+        print("Please copy .env.example to .env and configure your backend.")
+        return
 
     print(f"Testing LLM connectivity...")
     print(f"Target Model: {model}")

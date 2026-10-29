@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import json
 import os
+import re
 from simulation import mask_text, is_masking_active, get_ticker_mask, unmask_ticker
 
 # Base directory for data
@@ -18,43 +19,72 @@ def set_simulated_date(date_str):
     global SIMULATED_DATE
     SIMULATED_DATE = date_str
 
+def _extract_tickers(ticker_input: str) -> list:
+    """Extract list of tickers from string (comma-separated, JSON list, or single ticker)."""
+    if not ticker_input:
+        return []
+    cleaned = str(ticker_input).strip()
+    if cleaned.startswith('[') and cleaned.endswith(']'):
+        try:
+            parsed = json.loads(cleaned)
+            if isinstance(parsed, list):
+                return [str(x).strip().strip("'\"") for x in parsed if str(x).strip()]
+        except Exception:
+            pass
+    items = re.split(r'[,;\s]+', cleaned)
+    return [t.strip().strip("'\"[]") for t in items if t.strip().strip("'\"[]")]
+
 @tool("Fetch Historical Stock Data")
 def fetch_stock_data(ticker: str) -> str:
     """
-    Fetches the historical daily closing prices for a given stock ticker up to the current simulated date.
-    Useful for technical analysis and observing price trends.
+    Fetches the historical daily closing prices for one or more stock tickers up to the current simulated date.
+    Accepts a single ticker or comma-separated list of tickers.
     """
     try:
-        real_ticker = unmask_ticker(ticker) or ticker
-        stock = yf.Ticker(real_ticker)
-        # We need historical data ending at SIMULATED_DATE
+        tickers = _extract_tickers(ticker)
+        if not tickers:
+            return "No ticker provided."
+        
         end_date = pd.to_datetime(SIMULATED_DATE)
         start_date = end_date - pd.DateOffset(months=6)
         
-        hist = stock.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
-        if hist.empty:
-            return f"No historical data found for {ticker} up to {SIMULATED_DATE}."
-        
-        hist_str = hist[['Close']].tail(10).to_string() # Just show last 10 days to save tokens
-        return mask_text(f"Historical Data for {ticker} (leading up to {SIMULATED_DATE}):\n{hist_str}")
+        results = []
+        for sym in tickers:
+            real_ticker = unmask_ticker(sym) or sym
+            stock = yf.Ticker(real_ticker)
+            hist = stock.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
+            if hist.empty:
+                results.append(f"No historical data found for {sym} up to {SIMULATED_DATE}.")
+            else:
+                hist_str = hist[['Close']].tail(5).to_string()
+                results.append(f"Historical Data for {sym} (last 5 days to {SIMULATED_DATE}):\n{hist_str}")
+        return mask_text("\n\n".join(results))
     except Exception as e:
         return mask_text(f"Error fetching stock data for {ticker}: {str(e)}")
 
 @tool("Fetch Company Fundamentals")
 def fetch_company_fundamentals(ticker: str) -> str:
     """
-    Fetches fundamental financial data for a given stock ticker as it was on the simulated date.
+    Fetches fundamental financial data for one or more stock tickers as it was on the simulated date.
+    Accepts a single ticker or comma-separated list of tickers.
     """
     try:
-        real_ticker = unmask_ticker(ticker) or ticker
+        tickers = _extract_tickers(ticker)
+        if not tickers:
+            return "No ticker provided."
+        
         with open(FUNDS_PATH, 'r') as f:
             funds_data = json.load(f)
             
-        if SIMULATED_DATE in funds_data and real_ticker in funds_data[SIMULATED_DATE]:
-            data = funds_data[SIMULATED_DATE][real_ticker]
-            return mask_text(f"Fundamentals for {ticker} on {SIMULATED_DATE}:\n- PE Ratio: {data['PE']}\n- Profit Margin: {data['Margin']}\n")
-        else:
-            return mask_text(f"Fundamental data unavailable for {ticker} on {SIMULATED_DATE}. Assume average sector performance.")
+        results = []
+        for sym in tickers:
+            real_ticker = unmask_ticker(sym) or sym
+            if SIMULATED_DATE in funds_data and real_ticker in funds_data[SIMULATED_DATE]:
+                data = funds_data[SIMULATED_DATE][real_ticker]
+                results.append(f"Fundamentals for {sym} on {SIMULATED_DATE}:\n- PE Ratio: {data['PE']}\n- Profit Margin: {data['Margin']}")
+            else:
+                results.append(f"Fundamental data unavailable for {sym} on {SIMULATED_DATE}. Sector average assumed.")
+        return mask_text("\n\n".join(results))
     except Exception as e:
         return mask_text(f"Error fetching fundamentals for {ticker}: {str(e)}")
 
@@ -62,57 +92,65 @@ def fetch_company_fundamentals(ticker: str) -> str:
 def calculate_technical_indicators(ticker: str) -> str:
     """
     Calculates key technical indicators (50-day SMA, 200-day SMA, and Current Price) 
-    for a given stock ticker up to the simulated date to determine trend direction.
+    for one or more stock tickers (single or comma-separated list) up to the simulated date.
     """
     try:
-        real_ticker = unmask_ticker(ticker) or ticker
-        stock = yf.Ticker(real_ticker)
+        tickers = _extract_tickers(ticker)
+        if not tickers:
+            return "No ticker provided."
+        
         end_date = pd.to_datetime(SIMULATED_DATE)
         start_date = end_date - pd.DateOffset(years=1)
         
-        hist = stock.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
-        if hist.empty:
-            return f"No historical data to calculate indicators for {ticker}."
-        
-        hist['SMA_50'] = hist['Close'].rolling(window=50).mean()
-        hist['SMA_200'] = hist['Close'].rolling(window=200).mean()
-        
-        latest = hist.iloc[-1]
-        current_price = latest['Close']
-        sma_50 = latest['SMA_50']
-        sma_200 = latest['SMA_200']
-        
-        trend = "Bullish" if sma_50 > sma_200 else "Bearish"
-        
-        result = (
-            f"Technical Indicators for {ticker} as of {SIMULATED_DATE}:\n"
-            f"- Price: ${current_price:.2f}\n"
-            f"- 50-Day SMA: ${sma_50:.2f}\n"
-            f"- 200-Day SMA: ${sma_200:.2f}\n"
-            f"- Long-Term Trend: {trend}\n"
-        )
-        return mask_text(result)
+        results = []
+        for sym in tickers:
+            real_ticker = unmask_ticker(sym) or sym
+            stock = yf.Ticker(real_ticker)
+            hist = stock.history(start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
+            if hist.empty:
+                results.append(f"{sym}: No historical data to calculate indicators.")
+                continue
+            
+            hist['SMA_50'] = hist['Close'].rolling(window=50).mean()
+            hist['SMA_200'] = hist['Close'].rolling(window=200).mean()
+            
+            latest = hist.iloc[-1]
+            current_price = latest['Close']
+            sma_50 = latest['SMA_50']
+            sma_200 = latest['SMA_200']
+            
+            trend = "Bullish" if sma_50 > sma_200 else "Bearish"
+            results.append(
+                f"- {sym}: Price ${current_price:.2f} | 50-SMA ${sma_50:.2f} | 200-SMA ${sma_200:.2f} | Trend: {trend}"
+            )
+        header = f"Technical Indicators as of {SIMULATED_DATE}:\n"
+        return mask_text(header + "\n".join(results))
     except Exception as e:
         return mask_text(f"Error calculating technical indicators for {ticker}: {str(e)}")
 
 @tool("Fetch Stock News")
 def fetch_stock_news(ticker: str) -> str:
     """
-    Fetches the latest news articles and headlines for a given stock ticker up to the simulated date.
-    Useful to gauge market sentiment and recent company-specific events.
+    Fetches the latest news articles and headlines for one or more stock tickers up to the simulated date.
+    Accepts a single ticker or comma-separated list of tickers.
     """
     try:
-        real_ticker = unmask_ticker(ticker) or ticker
+        tickers = _extract_tickers(ticker)
+        if not tickers:
+            return "No ticker provided."
+            
         with open(NEWS_PATH, 'r') as f:
             news_data = json.load(f)
             
-        if SIMULATED_DATE in news_data and real_ticker in news_data[SIMULATED_DATE]:
-            headlines = news_data[SIMULATED_DATE][real_ticker]
-            result = f"Recent news for {ticker} (leading up to {SIMULATED_DATE}):\n"
-            for h in headlines:
-                result += f"- {h}\n"
-            return mask_text(result)
-        else:
-            return mask_text(f"No significant news found for {ticker} around {SIMULATED_DATE}.")
+        results = []
+        for sym in tickers:
+            real_ticker = unmask_ticker(sym) or sym
+            if SIMULATED_DATE in news_data and real_ticker in news_data[SIMULATED_DATE]:
+                headlines = news_data[SIMULATED_DATE][real_ticker]
+                lines = [f"  * {h}" for h in headlines]
+                results.append(f"Recent news for {sym} (up to {SIMULATED_DATE}):\n" + "\n".join(lines))
+            else:
+                results.append(f"No significant news found for {sym} around {SIMULATED_DATE}.")
+        return mask_text("\n\n".join(results))
     except Exception as e:
         return mask_text(f"Error fetching news for {ticker}: {str(e)}")

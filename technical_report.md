@@ -163,8 +163,10 @@ The benchmark performance from the FinMem paper (Table 2, Page 14) is juxtaposed
 | **BENCHMARK** | **S&P 500 (SPY)** | **+9.08%** | **0.95** | **1.12%** | **7.28%** |
 | | **Nasdaq 100 (QQQ)** | **+17.71%** | **1.12** | **1.48%** | **9.84%** |
 | | **FinMem 5-Stock Mean** | **+32.27%** | **1.42** | **3.13%** | **20.08%** |
-| | **Multi-Agent (Ours - Daily)** | **+31.67%** | **1.60** | **2.36%** | **17.11%** |
-| | **Multi-Agent (Ours - Discrete)** | **+40.74%** | **1.60** | **2.36%** | **17.11%** |
+| | **Multi-Agent (Ours - Exp 1 Unmasked Daily)** | **+30.94%** | **1.56** | **2.35%** | **17.11%** |
+| | **Multi-Agent (Ours - Exp 1 Unmasked Discrete)** | **+40.74%** | **1.56** | **2.35%** | **17.11%** |
+| | **Multi-Agent (Ours - Exp 2 Masked Daily)** | **+13.38%** | **0.77** | **2.31%** | **17.11%** |
+| | **Multi-Agent (Ours - Exp 2 Masked Discrete)** | **+24.45%** | **0.77** | **2.31%** | **17.11%** |
 
 ---
 

@@ -12,19 +12,26 @@ class PortfolioAgents:
             api_key = os.getenv("LLM_API_KEY", "ollama")
             base_url = os.getenv("LLM_BASE_URL")
         elif os.getenv("OPENROUTER_API_KEY"):
-            model = os.getenv("LLM_MODEL", "openrouter/openrouter/free")
+            # Prefer explicit OPENROUTER_MODEL or default to openrouter/free
+            candidate_model = os.getenv("OPENROUTER_MODEL") or os.getenv("LLM_MODEL", "")
+            if not candidate_model or candidate_model.startswith("ollama"):
+                model = "openrouter/openrouter/free"
+            else:
+                model = candidate_model
             api_key = os.getenv("OPENROUTER_API_KEY")
             base_url = "https://openrouter.ai/api/v1"
         else:
-            model = os.getenv("LLM_MODEL", "ollama/ritu-27b:latest")
-            api_key = os.getenv("LLM_API_KEY", "ollama")
-            base_url = "https://focus-copyrighted-clinic-behind.trycloudflare.com"
+            raise RuntimeError(
+                "No valid LLM backend configured! Please configure OPENROUTER_API_KEY or "
+                "LLM_BASE_URL in your .env file (see .env.example for template)."
+            )
         
         self.llm = LLM(
             model=model,
             api_key=api_key,
             base_url=base_url,
-            timeout=300
+            timeout=900,
+            stream=True
         )
 
     def pre_selection_agent(self):
@@ -53,7 +60,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
-            max_iter=6,
+            max_iter=3,
             tools=[fetch_stock_data, calculate_technical_indicators, retrieve_memory, store_memory],
             llm=self.llm
         )
@@ -68,7 +75,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
-            max_iter=6,
+            max_iter=3,
             tools=[fetch_company_fundamentals, fetch_stock_news, retrieve_memory],
             llm=self.llm
         )
@@ -83,7 +90,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
-            max_iter=6,
+            max_iter=3,
             tools=[fetch_company_fundamentals, fetch_stock_news, retrieve_memory],
             llm=self.llm
         )
@@ -112,7 +119,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
-            max_iter=4,
+            max_iter=2,
             tools=[fetch_stock_news, retrieve_memory],
             llm=self.llm
         )
@@ -127,7 +134,7 @@ class PortfolioAgents:
             ),
             verbose=False,
             allow_delegation=False,
-            max_iter=3,
+            max_iter=4,
             tools=[calculate_optimal_portfolio],
             llm=self.llm
         )

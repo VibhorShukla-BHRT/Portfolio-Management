@@ -9,3 +9,5 @@ pypfopt
 json_repair
 scipy
 duckduckgo-search
+requests
+pydantic

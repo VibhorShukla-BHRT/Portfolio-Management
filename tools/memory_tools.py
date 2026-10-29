@@ -37,60 +37,91 @@ def _get_effective_datetime():
     return datetime.datetime.now()
 
 
+import re
+
+def _extract_tickers(ticker_input: str) -> list:
+    """Extract list of tickers from string (comma-separated, JSON list, or single ticker)."""
+    if not ticker_input:
+        return []
+    cleaned = str(ticker_input).strip()
+    if cleaned.startswith('[') and cleaned.endswith(']'):
+        try:
+            import json
+            parsed = json.loads(cleaned)
+            if isinstance(parsed, list):
+                return [str(x).strip().strip("'\"") for x in parsed if str(x).strip()]
+        except Exception:
+            pass
+    items = re.split(r'[,;\s]+', cleaned)
+    return [t.strip().strip("'\"[]") for t in items if t.strip().strip("'\"[]")]
+
+
 @tool("Store Long Term Memory")
 def store_memory(ticker: str, observation: str, importance: int) -> str:
     """
     Stores an important financial observation into layered memory.
     Inputs:
-    - ticker: The stock ticker (e.g., 'AAPL')
+    - ticker: The stock ticker or comma-separated list of tickers (e.g., 'AAPL' or 'AAPL, MSFT')
     - observation: The summarized market observation or event.
     - importance: Integer 1-10 (1-3: Shallow, 4-7: Intermediate, 8-10: Deep).
     """
     try:
-        canonical_ticker = unmask_ticker(ticker) or ticker
+        raw_tickers = _extract_tickers(ticker)
+        if not raw_tickers:
+            raw_tickers = [ticker]
+            
         effective_dt = _get_effective_datetime()
-        doc_id = f"{canonical_ticker}_{effective_dt.isoformat()}_{os.urandom(4).hex()}"
         
         # Classify the memory layer based on importance
-        if importance <= 3:
+        if int(importance) <= 3:
             layer = "shallow"
-        elif importance <= 7:
+        elif int(importance) <= 7:
             layer = "intermediate"
         else:
             layer = "deep"
             
-        collection.add(
-            documents=[observation],
-            metadatas=[{
-                "ticker": canonical_ticker,
-                "importance": importance,
-                "layer": layer,
-                "timestamp": effective_dt.timestamp(),
-                "date": effective_dt.isoformat()
-            }],
-            ids=[doc_id]
-        )
-        return f"Successfully stored memory for {ticker} in the {layer} layer."
+        stored = []
+        for raw_t in raw_tickers:
+            canonical_ticker = unmask_ticker(raw_t) or raw_t
+            doc_id = f"{canonical_ticker}_{effective_dt.isoformat()}_{os.urandom(4).hex()}"
+            collection.add(
+                documents=[observation],
+                metadatas=[{
+                    "ticker": canonical_ticker,
+                    "importance": int(importance),
+                    "layer": layer,
+                    "timestamp": effective_dt.timestamp(),
+                    "date": effective_dt.isoformat()
+                }],
+                ids=[doc_id]
+            )
+            stored.append(canonical_ticker)
+            
+        return f"Successfully stored memory for {', '.join(stored)} in the {layer} layer."
     except Exception as e:
         return f"Observation noted for {ticker}, but long-term storage is currently unavailable."
 
 @tool("Retrieve Long Term Memory")
 def retrieve_memory(query: str, ticker: str, n_results: int = 3) -> str:
     """
-    Retrieves historical context for a ticker using a composite score of Relevancy, Recency, and Importance.
+    Retrieves historical context for one or more tickers (comma-separated or single) using a composite score of Relevancy, Recency, and Importance.
     """
     try:
-        canonical_ticker = unmask_ticker(ticker) or ticker
+        raw_tickers = _extract_tickers(ticker)
+        if not raw_tickers:
+            return f"No relevant past memories found for {ticker}."
+            
+        canonical_tickers = [unmask_ticker(t) or t for t in raw_tickers]
         if collection.count() == 0:
             return f"No relevant past memories found for {ticker} (memory is empty)."
             
-        # Fetch more candidates than needed so we can re-rank them
         fetch_n = min(15, collection.count())
+        where_clause = {"ticker": {"$in": canonical_tickers}} if len(canonical_tickers) > 1 else {"ticker": canonical_tickers[0]}
         
         results = collection.query(
             query_texts=[query],
             n_results=fetch_n,
-            where={"ticker": canonical_ticker},
+            where=where_clause,
             include=["documents", "metadatas", "distances"]
         )
         

@@ -102,6 +102,10 @@ def extract_weights(markdown_text: str, valid_tickers: list = None) -> dict:
     total_w = sum(weights.values())
     if total_w > 0:
         weights = {t: round(w / total_w, 4) for t, w in weights.items()}
+    elif valid_tickers:
+        print("[WARNING] Could not parse weights from text; falling back to 1/N equal allocation.")
+        eq = round(1.0 / len(valid_tickers), 4)
+        weights = {t: eq for t in valid_tickers}
 
     return weights
 
@@ -425,7 +429,21 @@ def run_simulation(live_llm: bool = False, mask_identifiers: bool = True) -> lis
         )
 
         print("[MASS] Running Multi-Agent Debate & Convex Optimization Pipeline...")
-        result = financial_crew.kickoff()
+        max_period_retries = 3
+        result = None
+        for attempt in range(1, max_period_retries + 1):
+            try:
+                print(f"[MASS] Period Execution Attempt {attempt}/{max_period_retries}...")
+                result = financial_crew.kickoff()
+                break
+            except Exception as e:
+                print(f"[MASS] Warning: Attempt {attempt} encountered error: {e}")
+                if attempt < max_period_retries:
+                    import time
+                    print("[MASS] Retrying in 15 seconds...")
+                    time.sleep(15)
+                else:
+                    raise e
 
         weights = extract_weights(str(result), valid_tickers=TEST_UNIVERSE)
         print(f"[MASS] Extracted Weights for {start_date}: {weights}")

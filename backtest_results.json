@@ -3,48 +3,48 @@
         "Date": "2022-11-01",
         "Period": "2022-11-01 to 2023-01-01",
         "Weights": {
-            "MSFT": 0.3927,
             "AMZN": 0.2165,
-            "NFLX": 0.1800,
-            "TSLA": 0.1331,
-            "COIN": 0.0777
+            "COIN": 0.0777,
+            "MSFT": 0.3927,
+            "NFLX": 0.18,
+            "TSLA": 0.1331
         },
         "Period_Return": -0.0977,
-        "Benchmark_Equal_Weight": -0.2109,
+        "Benchmark_Equal_Weight": -0.19,
         "Benchmark_SPY": -0.0009,
         "Benchmark_QQQ": -0.0298,
-        "Alpha_vs_EW": 0.1132
+        "Alpha_vs_EW": 0.0923
     },
     {
         "Date": "2023-01-01",
         "Period": "2023-01-01 to 2023-03-01",
         "Weights": {
-            "MSFT": 0.3983,
             "AMZN": 0.2185,
+            "COIN": 0.0806,
+            "MSFT": 0.3983,
             "NFLX": 0.1687,
-            "TSLA": 0.1338,
-            "COIN": 0.0806
+            "TSLA": 0.1338
         },
         "Period_Return": 0.2501,
-        "Benchmark_Equal_Weight": 0.3874,
+        "Benchmark_Equal_Weight": 0.4133,
         "Benchmark_SPY": 0.0405,
-        "Benchmark_QQQ": 0.1100,
-        "Alpha_vs_EW": -0.1373
+        "Benchmark_QQQ": 0.11,
+        "Alpha_vs_EW": -0.1632
     },
     {
         "Date": "2023-03-01",
         "Period": "2023-03-01 to 2023-05-01",
         "Weights": {
-            "MSFT": 1.0,
-            "AMZN": 0.0,
-            "NFLX": 0.0,
-            "TSLA": 0.0,
-            "COIN": 0.0
+            "TSLA": 0.1322,
+            "MSFT": 0.4019,
+            "AMZN": 0.2163,
+            "NFLX": 0.1799,
+            "COIN": 0.0697
         },
-        "Period_Return": 0.2477,
-        "Benchmark_Equal_Weight": 0.0165,
+        "Period_Return": 0.1033,
+        "Benchmark_Equal_Weight": 0.0173,
         "Benchmark_SPY": 0.0577,
         "Benchmark_QQQ": 0.1094,
-        "Alpha_vs_EW": 0.2312
+        "Alpha_vs_EW": 0.0861
     }
 ]

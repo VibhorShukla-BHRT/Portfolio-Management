@@ -1,6 +1,6 @@
 # Multi-Agent Portfolio Management System — Empirical Evaluation
 
-Generated at: 2026-10-28T19:39:42.424609
+Generated at: 2026-10-29T13:59:43.483542
 
 
 | Ticker / Portfolio | Strategy / Model | Cumulative Return (%) | Sharpe Ratio | Daily Volatility (%) | Max Drawdown (%) |
@@ -19,5 +19,5 @@ Generated at: 2026-10-28T19:39:42.424609
 | **BENCHMARKS** | **S&P 500 (SPY)** | **+8.97%** | **0.82** | **1.18%** | **-7.54%** |
 | | **Nasdaq 100 (QQQ)** | **+17.58%** | **1.29** | **1.58%** | **-11.23%** |
 | | **FinMem 5-Stock Average** | **+32.27%** | **1.42** | **3.13%** | **-20.08%** |
-| | **Multi-Agent (Ours - Daily Series)** | **+30.94%** | **1.56** | **2.35%** | **-17.11%** |
-| | **Multi-Agent (Ours - Discrete Comp)** | **+40.74%** | **1.56** | **2.35%** | **-17.11%** |
+| | **Multi-Agent (Ours - Daily Series)** | **+13.38%** | **0.77** | **2.31%** | **-17.11%** |
+| | **Multi-Agent (Ours - Discrete Comp)** | **+24.45%** | **0.77** | **2.31%** | **-17.11%** |
