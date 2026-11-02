@@ -88,7 +88,7 @@ class CalculateOptimalPortfolioTool(BaseTool):
 
             # Ensure simulated date is respected to prevent look-ahead bias
             sim_date = getattr(ft, 'SIMULATED_DATE', None)
-            if sim_date:
+            if sim_date and sim_date != "LIVE":
                 end_date = pd.to_datetime(sim_date)
                 start_date = end_date - pd.DateOffset(years=2)
                 data = yf.download(canonical_tickers, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'), progress=False)["Close"]

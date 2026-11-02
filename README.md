@@ -17,6 +17,7 @@ An institutional-grade, multi-agent financial asset management architecture that
 
 ## 📑 Table of Contents
 
+- [Web Platform & Paper Trading Engine](#-web-platform--paper-trading-engine)
 - [Key Innovations & Theoretical Thesis](#-key-innovations--theoretical-thesis)
 - [System Architecture](#-system-architecture)
 - [Empirical Benchmark Results](#-empirical-benchmark-results)
@@ -26,6 +27,32 @@ An institutional-grade, multi-agent financial asset management architecture that
 - [Repository Structure](#-repository-structure)
 - [Documentation Suite](#-documentation-suite)
 - [License & Citation](#-license--citation)
+
+---
+
+## 🌐 Web Platform & Paper Trading Engine
+
+The MASS framework includes an institutional-grade web application built with **React 18 + Vite + Tailwind CSS** and a **FastAPI async streaming backend (Server-Sent Events)**:
+
+* **Dual Market Coverage:**
+  * 🇺🇸 **US Equities / S&P 500:** Magnificent 7, Mega-Cap Tech, Global Semiconductor Alpha.
+  * 🇮🇳 **Indian Equities / NIFTY 50:** Reliance, TCS, Infosys, HDFC Bank, ICICI Bank, Indian IT Exporters, Private Credit Titans.
+* **Dialectical Live War Room:** Real-time visualization of the 7 autonomous agents debating upside catalysts and downside risks in real-time.
+* **Continuous Sizing & Order Book:** Converts Black-Litterman and HRP weights into exact discrete shares to purchase and cash buffers.
+* **Paper Trading Platform (`/dummy-invest`):** Allows users to invest virtual capital into model recommendations and track real-time mark-to-market performance, unrealized P&L, and benchmark outperformance.
+* **Zero-Cost High-Speed LLM:** Powered by **Groq LPU Hardware Acceleration** (`qwen3.8-27b`) with sub-second inference and automatic failover.
+
+### Quick Start Web Platform:
+```bash
+# Development Mode (Vite + FastAPI reload)
+./run_dev.sh
+
+# Production Server (Unified port 8000)
+./run_prod.sh
+
+# Deploy Backend to Hugging Face Spaces (16GB RAM Free)
+./venv/bin/python deploy_hf.py
+```
 
 ---
 

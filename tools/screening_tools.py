@@ -14,9 +14,15 @@ def screen_top_assets(universe_type: str = "technology", top_n: int = 4) -> str:
     # and perform listwise ranking via an LLM. Here, we simulate the universe and let the LLM filter.
     
     universes = {
-        "technology": ["AAPL", "MSFT", "NVDA", "GOOGL", "META", "AMD", "INTC", "TSM", "AVGO", "CRM"],
+        "technology": ["AAPL", "MSFT", "NVDA", "GOOGL", "META", "AMD", "TSLA", "AVGO", "CRM"],
+        "us_tech": ["AAPL", "MSFT", "NVDA", "GOOGL", "META", "AMZN", "TSLA"],
+        "sp500": ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "BRK-B", "JPM", "V", "UNH"],
         "finance": ["JPM", "BAC", "WFC", "C", "GS", "MS", "V", "MA", "AXP", "PYPL"],
-        "healthcare": ["JNJ", "UNH", "PFE", "ABBV", "MRK", "TMO", "DHR", "ABT", "LLY", "BMY"]
+        "healthcare": ["JNJ", "UNH", "PFE", "ABBV", "MRK", "TMO", "DHR", "ABT", "LLY", "BMY"],
+        "nifty50": ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "BHARTIARTL.NS", "ITC.NS", "SBIN.NS", "LT.NS", "HINDUNILVR.NS"],
+        "indian_market": ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "BHARTIARTL.NS", "ITC.NS", "SBIN.NS"],
+        "indian_it": ["TCS.NS", "INFY.NS", "HCLTECH.NS", "WIPRO.NS", "TECHM.NS", "LTIM.NS"],
+        "indian_banking": ["HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS", "AXISBANK.NS"]
     }
     
     selected_universe = universes.get(universe_type.lower(), universes["technology"])

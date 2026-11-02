@@ -6,13 +6,22 @@ from tools.memory_tools import store_memory, retrieve_memory
 from tools.screening_tools import screen_top_assets
 
 class PortfolioAgents:
-    def __init__(self):
-        if os.getenv("LLM_BASE_URL"):
+    def __init__(self, custom_api_key=None, custom_model=None, custom_base_url=None):
+        if custom_api_key:
+            model = custom_model or "openai/qwen/qwen3.8-27b"
+            api_key = custom_api_key
+            base_url = custom_base_url or "https://api.groq.com/openai/v1"
+        elif os.getenv("GROQ_API_KEY"):
+            model = os.getenv("GROQ_MODEL", "openai/qwen/qwen3.8-27b")
+            if not model.startswith("openai/") and not model.startswith("groq/"):
+                model = f"openai/{model}"
+            api_key = os.getenv("GROQ_API_KEY")
+            base_url = "https://api.groq.com/openai/v1"
+        elif os.getenv("LLM_BASE_URL"):
             model = os.getenv("LLM_MODEL", "ollama/ritu-27b:latest")
             api_key = os.getenv("LLM_API_KEY", "ollama")
             base_url = os.getenv("LLM_BASE_URL")
         elif os.getenv("OPENROUTER_API_KEY"):
-            # Prefer explicit OPENROUTER_MODEL or default to openrouter/free
             candidate_model = os.getenv("OPENROUTER_MODEL") or os.getenv("LLM_MODEL", "")
             if not candidate_model or candidate_model.startswith("ollama"):
                 model = "openrouter/openrouter/free"
@@ -22,15 +31,15 @@ class PortfolioAgents:
             base_url = "https://openrouter.ai/api/v1"
         else:
             raise RuntimeError(
-                "No valid LLM backend configured! Please configure OPENROUTER_API_KEY or "
-                "LLM_BASE_URL in your .env file (see .env.example for template)."
+                "No valid LLM backend configured! Please configure GROQ_API_KEY, OPENROUTER_API_KEY, or "
+                "LLM_BASE_URL in your .env file."
             )
         
         self.llm = LLM(
             model=model,
             api_key=api_key,
             base_url=base_url,
-            timeout=900,
+            timeout=300,
             stream=True
         )
 
