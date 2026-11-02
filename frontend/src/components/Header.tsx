@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MarketType } from '../types/portfolio';
-import { LineChart, Briefcase, Key, ShieldCheck, ExternalLink, Sparkles, Sliders } from 'lucide-react';
+import { Terminal, SlidersHorizontal, Key, Activity, Shield, ChevronRight } from 'lucide-react';
 
 interface HeaderProps {
   currentMarket: MarketType;
@@ -19,101 +19,122 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   hasCustomKey,
 }) => {
+  const [timeStr, setTimeStr] = useState<string>('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setTimeStr(now.toLocaleTimeString('en-US', { hour12: false }));
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
-    <header className="border-b border-slate-800 bg-[#0d121d]/90 backdrop-blur-md sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Left: Branding */}
+    <header className="border-b border-white/[0.08] bg-[#090b10]/95 backdrop-blur-md sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-14">
+          
+          {/* Left: Terminal Identity */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-              <LineChart className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-obsidian-800 border border-white/[0.1] flex items-center justify-center text-sky-400">
+              <Terminal className="w-4 h-4" />
             </div>
-            <div>
+            
+            <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-sky-400 via-indigo-300 to-white bg-clip-text text-transparent">
-                  MASS
+                <span className="font-mono font-bold text-sm tracking-tight text-white">
+                  MASS<span className="text-sky-400">.OS</span>
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-medium bg-white/[0.06] text-slate-300 border border-white/[0.08]">
                   v2.0
                 </span>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <ShieldCheck className="w-3 h-3" /> NIT Raipur
+                <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-subtle" />
+                  GROQ LPU READY
                 </span>
               </div>
-              <p className="text-xs text-slate-400 hidden sm:block">
-                Autonomous Multi-Agent Asset Management Architecture
-              </p>
+              <span className="text-[10px] text-slate-400 font-mono tracking-tight hidden sm:block">
+                Dept of CSE &bull; National Institute of Technology Raipur
+              </span>
             </div>
           </div>
 
-          {/* Center: Navigation Tabs */}
-          <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+          {/* Center: Monospace Navigation Tabs */}
+          <nav className="flex items-center bg-obsidian-950 p-1 rounded-lg border border-white/[0.08]">
             <button
               onClick={() => onTabChange('allocator')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-medium transition-all ${
                 activeTab === 'allocator'
-                  ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-obsidian-800 text-sky-300 border border-sky-500/30 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-900'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Portfolio Allocator</span>
+              <span>[01]</span>
+              <span>PORTFOLIO ALLOCATOR</span>
             </button>
             <button
               onClick={() => onTabChange('dummy-invest')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-medium transition-all ${
                 activeTab === 'dummy-invest'
-                  ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-obsidian-800 text-sky-300 border border-sky-500/30 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-obsidian-900'
               }`}
             >
-              <Briefcase className="w-3.5 h-3.5" />
-              <span>Paper Trading (/dummy-invest)</span>
+              <span>[02]</span>
+              <span>VIRTUAL TRACKER</span>
             </button>
-          </div>
+          </nav>
 
-          {/* Right: Market Switcher & Settings */}
-          <div className="flex items-center gap-2">
-            {/* Market Toggle */}
-            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+          {/* Right: Market Toggle & Utilities */}
+          <div className="flex items-center gap-2.5">
+            {/* Market Universe Segmented Control */}
+            <div className="flex items-center bg-obsidian-950 border border-white/[0.08] rounded-lg p-0.5 font-mono text-xs">
               <button
                 onClick={() => onMarketChange('US')}
                 className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
                   currentMarket === 'US'
-                    ? 'bg-slate-800 text-sky-400 font-semibold shadow-sm'
+                    ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30 font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
-                title="S&P 500 & US Tech Giants (USD)"
+                title="S&P 500 US Mega-Cap Universe (USD)"
               >
-                🇺🇸 US ($)
+                US ($)
               </button>
               <button
                 onClick={() => onMarketChange('IN')}
                 className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
                   currentMarket === 'IN'
-                    ? 'bg-slate-800 text-sky-400 font-semibold shadow-sm'
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
-                title="NIFTY 50 & Indian Equities (INR)"
+                title="NIFTY 50 Indian Equities Universe (INR)"
               >
-                🇮🇳 IN (₹)
+                NSE (₹)
               </button>
             </div>
 
-            {/* BYOK Settings Button */}
+            {/* Live Clock */}
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-obsidian-950 border border-white/[0.06] font-mono text-[11px] text-slate-400">
+              <Activity className="w-3 h-3 text-slate-500" />
+              <span>{timeStr}</span>
+            </div>
+
+            {/* API Settings Trigger */}
             <button
               onClick={onOpenSettings}
-              className={`p-2 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5 ${
+              className={`p-1.5 rounded-lg border transition-all ${
                 hasCustomKey
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                  : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white hover:border-slate-700'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : 'bg-obsidian-950 text-slate-400 border-white/[0.08] hover:text-slate-200 hover:border-white/[0.15]'
               }`}
-              title="LLM Settings & API Keys"
+              title="Configure API Keys (Groq / Hugging Face)"
             >
-              <Key className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">BYOK</span>
+              <Key className="w-4 h-4" />
             </button>
           </div>
+
         </div>
       </div>
     </header>

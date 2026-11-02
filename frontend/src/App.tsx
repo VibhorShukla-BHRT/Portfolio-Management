@@ -45,7 +45,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0d14] text-slate-100 selection:bg-sky-500/30">
+    <div className="min-h-screen flex flex-col bg-[#07090e] text-slate-100 selection:bg-sky-500/20">
       {/* Top Academic Alert Banner */}
       <DisclaimerBanner />
 

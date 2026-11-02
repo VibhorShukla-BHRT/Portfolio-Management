@@ -59,8 +59,52 @@ def _get_historical_trajectory(
     inv_dt = pd.to_datetime(investment_date) if investment_date else (now_dt - pd.DateOffset(days=32))
     
     clean_tf = timeframe.upper().strip()
+    all_syms = tickers + [benchmark_sym]
     
-    # Check if this is a pre-investment historical backtest or portfolio holding growth
+    if clean_tf == "1D":
+        try:
+            raw = yf.download(all_syms, period="1d", interval="5m", progress=False)["Close"]
+            if raw.empty:
+                # If market not open yet today, grab latest 1-day session
+                raw = yf.download(all_syms, period="5d", interval="15m", progress=False)["Close"]
+                if not raw.empty:
+                    # Filter to last trading date
+                    last_day = raw.index[-1].date()
+                    raw = raw[raw.index.date == last_day]
+            if not raw.empty:
+                data = raw.dropna(how="all").ffill().bfill()
+                points = []
+                base_val = None
+                base_bm = None
+                for dt, row in data.iterrows():
+                    val = cash_balance + sum(
+                        holdings_dict[t] * float(row[t]) for t in tickers if t in row and pd.notnull(row[t])
+                    )
+                    bm_price = float(row[benchmark_sym]) if benchmark_sym in row and pd.notnull(row[benchmark_sym]) else 1.0
+                    if base_val is None:
+                        base_val = val
+                    if base_bm is None:
+                        base_bm = bm_price
+                    ret_pct = round(((val - base_val) / base_val) * 100, 2) if base_val else 0.0
+                    bm_ret_pct = round(((bm_price - base_bm) / base_bm) * 100, 2) if base_bm else 0.0
+                    
+                    time_label = dt.strftime("%I:%M %p")
+                    full_display = f"{dt.strftime('%b %d, %Y')} • {time_label} ({market})"
+                    points.append({
+                        "label": time_label,
+                        "date_iso": dt.isoformat(),
+                        "display_market_time": full_display,
+                        "time_ist": dt.tz_convert("Asia/Kolkata").strftime("%I:%M %p IST") if hasattr(dt, "tz_convert") and dt.tzinfo else time_label,
+                        "time_edt": dt.tz_convert("America/New_York").strftime("%I:%M %p EDT") if hasattr(dt, "tz_convert") and dt.tzinfo else time_label,
+                        "total_valuation": round(val, 2),
+                        "return_pct": ret_pct,
+                        "benchmark_return_pct": bm_ret_pct
+                    })
+                return points
+        except Exception:
+            pass
+
+    # Standard multi-day/year portfolio mode: strictly bounded by investment date!
     is_pre_investment_backtest = clean_tf.startswith("BACKTEST_")
     
     if is_pre_investment_backtest:
@@ -81,7 +125,6 @@ def _get_historical_trajectory(
             start_dt = inv_dt
         interval = "1d"
         
-    all_syms = tickers + [benchmark_sym]
     try:
         raw = yf.download(all_syms, start=start_dt.strftime("%Y-%m-%d"), interval=interval, progress=False)["Close"]
         if raw.empty:

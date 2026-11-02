@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { AreaChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { PaperSnapshot, TimezoneInfo } from '../types/portfolio';
-import { TrendingUp, Globe, Clock, Layers, Calendar } from 'lucide-react';
+import { TrendingUp, Globe, Layers, Calendar, ShieldCheck } from 'lucide-react';
 
 interface PerformanceChartProps {
   history: PaperSnapshot[];
@@ -15,12 +15,11 @@ interface PerformanceChartProps {
 }
 
 const TIMEFRAMES = [
-  { id: '1D', label: '1D', desc: 'Today (Intraday)' },
-  { id: '1W', label: '1W', desc: 'Past 1 Week' },
-  { id: '1M', label: '1M', desc: 'Past 1 Month' },
-  { id: '1Y', label: '1Y', desc: 'Past 1 Year' },
-  { id: '5Y', label: '5Y', desc: 'Past 5 Years' },
-  { id: 'ALL', label: 'ALL', desc: 'Since Inception' },
+  { id: '1D', label: '1D', desc: 'Intraday 5-Min Mark-to-Market' },
+  { id: '1W', label: '1W', desc: 'Past 7 Days' },
+  { id: '1M', label: '1M', desc: 'Past 30 Days' },
+  { id: '1Y', label: '1Y', desc: 'Since Investment Date (Bounded)' },
+  { id: 'ALL', label: 'ALL', desc: 'Complete Holding Period' },
 ];
 
 export const PerformanceChart: React.FC<PerformanceChartProps> = ({
@@ -35,7 +34,6 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
 }) => {
   const [showBenchmark, setShowBenchmark] = useState<boolean>(true);
 
-  // Format data points for Recharts
   const data = history.map((h) => ({
     label: h.label,
     date_iso: h.date_iso,
@@ -47,51 +45,51 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
     benchmark_return_pct: h.benchmark_return_pct || 0.0,
   }));
 
+  const startDateLabel = data.length > 0 ? (data[0].display_market_time || data[0].label) : 'Investment Date';
+  const endDateLabel = data.length > 0 ? (data[data.length - 1].display_market_time || data[data.length - 1].label) : 'Latest';
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const item = payload[0].payload;
       const isPositive = item.return_pct >= 0;
-      const isBenchmarkPositive = item.benchmark_return_pct >= 0;
+      const isBmPositive = item.benchmark_return_pct >= 0;
 
       return (
-        <div className="bg-slate-900/95 border border-slate-700 p-3.5 rounded-xl shadow-2xl text-xs space-y-2 backdrop-blur-md min-w-[220px]">
-          {/* Time & Timezone Header */}
-          <div className="pb-1.5 border-b border-slate-800 text-[11px] text-slate-400 space-y-0.5">
-            <div className="font-semibold text-slate-200 flex items-center gap-1.5">
+        <div className="bg-obsidian-950 border border-white/[0.12] p-3 rounded-lg shadow-2xl font-mono text-xs space-y-1.5 backdrop-blur-md min-w-[210px]">
+          <div className="pb-1 border-b border-white/[0.06] text-[10px] text-slate-400 space-y-0.5">
+            <div className="font-semibold text-white flex items-center gap-1">
               <Calendar className="w-3 h-3 text-sky-400" />
               <span>{item.display_market_time}</span>
             </div>
             {item.time_ist && (
               <div className="text-[10px] text-slate-400 flex items-center justify-between">
-                <span>Local Time:</span>
-                <span className="font-mono text-slate-300">{item.time_ist}</span>
+                <span>IST (Local):</span>
+                <span className="text-slate-300">{item.time_ist}</span>
               </div>
             )}
             {item.time_edt && timezoneInfo?.market === 'US' && (
               <div className="text-[10px] text-slate-400 flex items-center justify-between">
-                <span>Exchange (EDT):</span>
-                <span className="font-mono text-slate-300">{item.time_edt}</span>
+                <span>EDT (NYSE):</span>
+                <span className="text-slate-300">{item.time_edt}</span>
               </div>
             )}
           </div>
 
-          {/* Portfolio Valuation */}
           <div>
-            <div className="text-[10px] text-slate-400">Portfolio Valuation</div>
-            <div className="text-base font-extrabold text-white font-mono">
+            <div className="text-[10px] text-slate-500 uppercase">Valuation (Mark-to-Market)</div>
+            <div className="text-base font-bold text-white tabular-nums">
               {currency}{item.valuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className={`font-mono text-[11px] font-bold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <div className={`text-[11px] font-semibold tabular-nums ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
               Portfolio Return: {isPositive ? '+' : ''}{item.return_pct.toFixed(2)}%
             </div>
           </div>
 
-          {/* Benchmark Return Overlay */}
           {showBenchmark && (
-            <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-              <span className="text-indigo-300">{benchmarkName}:</span>
-              <span className={`font-mono font-semibold ${isBenchmarkPositive ? 'text-indigo-400' : 'text-rose-400'}`}>
-                {isBenchmarkPositive ? '+' : ''}{item.benchmark_return_pct.toFixed(2)}%
+            <div className="pt-1 border-t border-white/[0.06] flex items-center justify-between text-[10px]">
+              <span className="text-slate-400">{benchmarkName}:</span>
+              <span className={`font-semibold tabular-nums ${isBmPositive ? 'text-indigo-400' : 'text-rose-400'}`}>
+                {isBmPositive ? '+' : ''}{item.benchmark_return_pct.toFixed(2)}%
               </span>
             </div>
           )}
@@ -102,46 +100,43 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
   };
 
   return (
-    <div className="bg-[#0f1523] border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
+    <div className="bg-obsidian-900 border border-white/[0.08] rounded-xl p-5 shadow-xl space-y-4">
       {/* Top Header & Timezone Clarity */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3.5 border-b border-white/[0.08]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Historical Valuation &amp; Growth Trajectory
+          <div className="flex items-center gap-2 mb-0.5">
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <h3 className="font-mono text-xs font-bold text-white tracking-wide uppercase">
+              Mark-to-Market Valuation &amp; Growth Trajectory
             </h3>
           </div>
-          <p className="text-xs text-slate-400">
-            Track asset basket value growth over time against market benchmarks.
-          </p>
+          <div className="flex flex-wrap items-center gap-2 text-slate-400 font-mono text-[10px]">
+            <span>Window: {startDateLabel} &rarr; {endDateLabel}</span>
+            <span className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+              START BOUNDED TO INVESTMENT DATE
+            </span>
+          </div>
         </div>
 
-        {/* Timezone & Market Hours Badge */}
+        {/* Timezone Details Badge */}
         {timezoneInfo && (
-          <div className="bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-2.5">
-            <Globe className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+          <div className="bg-obsidian-950 border border-white/[0.06] px-2.5 py-1 rounded font-mono text-[10px] flex items-center gap-2 text-slate-400">
+            <Globe className="w-3 h-3 text-sky-400 shrink-0" />
             <div>
-              <span className="text-slate-300 font-semibold block">
-                {timezoneInfo.exchange_name} ({timezoneInfo.exchange_timezone})
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono block">
-                Session: {timezoneInfo.market_hours}
-              </span>
+              <span className="text-slate-200 font-semibold">{timezoneInfo.exchange_name} ({timezoneInfo.exchange_timezone})</span>
+              <span className="text-slate-500 block">Session: {timezoneInfo.market_hours}</span>
             </div>
           </div>
         )}
       </div>
 
       {/* Main Chart Graphic */}
-      <div className="h-72 w-full relative">
+      <div className="h-64 w-full relative">
         {loading && (
-          <div className="absolute inset-0 bg-[#0f1523]/70 backdrop-blur-xs flex items-center justify-center z-10 rounded-2xl">
-            <div className="flex items-center gap-2 text-xs text-sky-300 font-semibold">
-              <span className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-              <span>Fetching historical market series...</span>
+          <div className="absolute inset-0 bg-obsidian-900/80 backdrop-blur-xs flex items-center justify-center z-10 rounded-lg">
+            <div className="flex items-center gap-2 font-mono text-xs text-sky-300 font-medium">
+              <span className="w-3.5 h-3.5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+              <span>Updating trajectory from investment date...</span>
             </div>
           </div>
         )}
@@ -150,24 +145,24 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
           <AreaChart data={data}>
             <defs>
               <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
               </linearGradient>
             </defs>
             <XAxis
               dataKey="label"
-              stroke="#64748b"
-              fontSize={11}
+              stroke="#475569"
+              fontSize={10}
               tickLine={false}
-              axisLine={{ stroke: '#1e293b' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
             />
             <YAxis
-              stroke="#64748b"
-              fontSize={11}
+              stroke="#475569"
+              fontSize={10}
               domain={['auto', 'auto']}
               tickFormatter={(v) => `${currency}${v.toLocaleString()}`}
               tickLine={false}
-              axisLine={{ stroke: '#1e293b' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area
@@ -175,7 +170,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
               dataKey="valuation"
               name="Portfolio Valuation"
               stroke="#10b981"
-              strokeWidth={2.5}
+              strokeWidth={2}
               fillOpacity={1}
               fill="url(#growthGrad)"
             />
@@ -183,10 +178,10 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
         </ResponsiveContainer>
       </div>
 
-      {/* Groww-Style Timeframe Selector Pills & Benchmark Toggle */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-slate-800/80">
+      {/* Timeframe Selector Pills & Benchmark Toggle */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/[0.08] font-mono text-xs">
         {/* Groww-style timeframe pills */}
-        <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-1 bg-obsidian-950 p-1 rounded-lg border border-white/[0.08]">
           {TIMEFRAMES.map((tf) => {
             const isActive = timeframe === tf.id;
             return (
@@ -194,10 +189,10 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
                 key={tf.id}
                 type="button"
                 onClick={() => onTimeframeChange(tf.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`px-2.5 py-1 rounded text-xs transition-colors ${
                   isActive
-                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-obsidian-900'
                 }`}
                 title={tf.desc}
               >
@@ -212,14 +207,14 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
           <button
             type="button"
             onClick={() => setShowBenchmark(!showBenchmark)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 rounded text-xs border transition-colors flex items-center gap-1.5 ${
               showBenchmark
-                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-sm'
-                : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 font-semibold'
+                : 'bg-obsidian-950 text-slate-400 border-white/[0.06] hover:text-slate-200'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Benchmark Comparison ({benchmarkName})</span>
+            <Layers className="w-3 h-3" />
+            <span>Benchmark: {benchmarkName}</span>
           </button>
         </div>
       </div>

@@ -6,11 +6,7 @@ import { AllocationChart } from '../components/AllocationChart';
 import { OrderBookTable } from '../components/OrderBookTable';
 import { MetricsGrid } from '../components/MetricsGrid';
 import {
-  Sparkles,
   Play,
-  RotateCcw,
-  Sliders,
-  Shield,
   Layers,
   ArrowRight,
   Download,
@@ -18,7 +14,11 @@ import {
   Plus,
   X,
   Briefcase,
-  AlertCircle
+  AlertCircle,
+  Shield,
+  SlidersHorizontal,
+  ChevronRight,
+  Check
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -57,7 +57,6 @@ export const HomePage: React.FC<HomePageProps> = ({
     fetchUniverses()
       .then((data) => {
         setUniverses(data);
-        // Default to first preset of the current market
         const marketPresets = currentMarket === 'IN' ? data.in : data.us;
         if (marketPresets.length > 0) {
           setSelectedUniverseId(marketPresets[0].id);
@@ -157,35 +156,36 @@ export const HomePage: React.FC<HomePageProps> = ({
     setIsDeployingDummy(true);
     try {
       const p = await createDummyPortfolio({
-        name: `${currentMarket === 'IN' ? 'Nifty Alpha' : 'US Tech Alpha'} Portfolio (${new Date().toLocaleDateString()})`,
+        name: `${currentMarket === 'IN' ? 'NSE Nifty Alpha' : 'US Tech Alpha'} Portfolio (${new Date().toLocaleDateString()})`,
         market: currentMarket,
         currency,
         initial_capital: capital,
         holdings: optimizationResult.holdings,
         strategy_mode: strategyMode,
+        investment_date: new Date().toISOString().split('T')[0],
       });
       setIsDeployingDummy(false);
       onNavigateToDummyInvest(p.portfolio.id);
     } catch (err: any) {
       setIsDeployingDummy(false);
-      alert('Failed to deploy to dummy investment tracker: ' + err.message);
+      alert('Failed to deploy to virtual portfolio tracker: ' + err.message);
     }
   };
 
   const handleExportMemo = () => {
     if (!optimizationResult) return;
-    const memo = `# MASS Investment Strategy Memo\n` +
+    const memo = `# MASS Institutional Strategy Memo\n` +
       `Date: ${new Date().toISOString()}\n` +
       `Market: ${currentMarket} | Strategy: ${strategyMode.toUpperCase()}\n` +
-      `Total Capital: ${currency}${capital.toLocaleString()}\n` +
-      `Optimal Method: ${optimizationResult.method_used}\n\n` +
+      `Capital: ${currency}${capital.toLocaleString()}\n` +
+      `Convex Solver: ${optimizationResult.method_used}\n\n` +
       `## Portfolio Statistics\n` +
       `- Expected Annual Return: +${optimizationResult.metrics.expected_annual_return_pct}%\n` +
       `- Annual Volatility: ${optimizationResult.metrics.annual_volatility_pct}%\n` +
       `- Sharpe Ratio: ${optimizationResult.metrics.sharpe_ratio}\n` +
       `- 95% Value at Risk: -${optimizationResult.metrics.var_95_pct}%\n\n` +
       `## Holdings Breakdown\n` +
-      optimizationResult.holdings.map(h => `- ${h.ticker} (${h.name}): ${h.target_weight}% | ${h.shares} shares @ ${currency}${h.price} = ${currency}${h.allocated_cash}`).join('\n') +
+      optimizationResult.holdings.map(h => `- ${h.ticker} (${h.name}): ${h.target_weight}% | ${h.shares} units @ ${currency}${h.price} = ${currency}${h.allocated_cash}`).join('\n') +
       `\n\nAcademic Project: Department of CSE, NIT Raipur. Author: Vibhor Shukla (Roll: 23115107).`;
 
     const blob = new Blob([memo], { type: 'text/markdown' });
@@ -200,31 +200,44 @@ export const HomePage: React.FC<HomePageProps> = ({
   const currentPresets = universes ? (currentMarket === 'IN' ? universes.in : universes.us) : [];
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* Hero Configuration Panel */}
-      <div className="bg-[#0f1523] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20 mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Autonomous Convex Asset Allocation Engine</span>
+    <div className="space-y-6">
+      {/* Parameter Control Deck */}
+      <div className="bg-obsidian-900 border border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-xl space-y-5">
+        
+        {/* Terminal Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/[0.06]">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-mono text-xs font-bold text-sky-400 uppercase tracking-wider">
+                COGNITIVE ALLOCATION TERMINAL
+              </span>
+              <span className="font-mono text-[10px] text-slate-500">
+                // CONVEX BAYESIAN SOLVER
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Autonomous Dialectical Portfolio Optimization
+            </h1>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Institutional Capital Allocation &amp; Dialectical Debate
-          </h1>
-          <p className="text-sm text-slate-400 mt-1 max-w-3xl leading-relaxed">
-            Enter your investment fund below. The 7-agent MASS architecture synthesizes qualitative earnings calls, news, and technical cross-asset covariance to compute optimal mathematical portfolio weights using Black-Litterman and Hierarchical Risk Parity (HRP).
-          </p>
+
+          <div className="font-mono text-xs text-slate-400 flex items-center gap-2">
+            <span>UNIVERSE:</span>
+            <span className="text-white font-bold px-2 py-0.5 rounded bg-obsidian-950 border border-white/[0.08]">
+              {currentMarket === 'IN' ? 'NSE NIFTY 50 (₹)' : 'S&P 500 MEGA-CAP ($)'}
+            </span>
+          </div>
         </div>
 
         {/* Input Parameters Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          
           {/* Capital Input (4 cols) */}
-          <div className="lg:col-span-4 space-y-2">
-            <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider">
-              Total Capital Fund ({currency})
+          <div className="md:col-span-4 space-y-1.5">
+            <label className="block font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              TOTAL CAPITAL FUND ({currency})
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-base font-bold">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-base font-bold">
                 {currency}
               </span>
               <input
@@ -233,119 +246,120 @@ export const HomePage: React.FC<HomePageProps> = ({
                 step="500"
                 value={capital}
                 onChange={(e) => setCapital(Math.max(1, parseFloat(e.target.value) || 0))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-10 pr-4 py-3.5 text-lg font-mono font-bold text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all shadow-inner"
+                className="w-full bg-obsidian-950 border border-white/[0.08] rounded-lg pl-9 pr-3 py-2.5 text-base font-mono font-bold text-white focus:outline-none focus:border-sky-500 transition-colors tabular-nums"
                 placeholder="10000"
               />
             </div>
-            <p className="text-[11px] text-slate-500">
-              Allocated into exact discrete shares &amp; continuous mathematical percentages.
-            </p>
+            <span className="text-[10px] text-slate-500 font-mono block">
+              Converts continuous weights into exact integer share lots.
+            </span>
           </div>
 
           {/* Strategy Mode (4 cols) */}
-          <div className="lg:col-span-4 space-y-2">
-            <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider">
-              Risk &amp; Return Objective
+          <div className="md:col-span-4 space-y-1.5">
+            <label className="block font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              OBJECTIVE FUNCTION
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 font-mono text-xs">
               <button
                 type="button"
                 onClick={() => setStrategyMode('balanced')}
-                className={`py-3 px-2 rounded-xl text-xs font-bold transition-all border ${
+                className={`py-2 px-1 rounded-lg border transition-all text-center ${
                   strategyMode === 'balanced'
-                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-md shadow-sky-500/10'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                    ? 'bg-sky-500/15 text-sky-400 border-sky-500/40 font-bold'
+                    : 'bg-obsidian-950 text-slate-400 border-white/[0.06] hover:text-slate-200'
                 }`}
               >
                 Balanced
-                <span className="block text-[10px] font-normal text-slate-400">Max Sharpe</span>
+                <span className="block text-[9px] text-slate-500 font-normal">Max Sharpe</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStrategyMode('conservative')}
-                className={`py-3 px-2 rounded-xl text-xs font-bold transition-all border ${
+                className={`py-2 px-1 rounded-lg border transition-all text-center ${
                   strategyMode === 'conservative'
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-500/10'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 font-bold'
+                    : 'bg-obsidian-950 text-slate-400 border-white/[0.06] hover:text-slate-200'
                 }`}
               >
                 Defensive
-                <span className="block text-[10px] font-normal text-slate-400">Min Volatility</span>
+                <span className="block text-[9px] text-slate-500 font-normal">Min Vol</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStrategyMode('aggressive')}
-                className={`py-3 px-2 rounded-xl text-xs font-bold transition-all border ${
+                className={`py-2 px-1 rounded-lg border transition-all text-center ${
                   strategyMode === 'aggressive'
-                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-md shadow-purple-500/10'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                    ? 'bg-purple-500/15 text-purple-400 border-purple-500/40 font-bold'
+                    : 'bg-obsidian-950 text-slate-400 border-white/[0.06] hover:text-slate-200'
                 }`}
               >
                 Growth
-                <span className="block text-[10px] font-normal text-slate-400">High Beta</span>
+                <span className="block text-[9px] text-slate-500 font-normal">High Beta</span>
               </button>
             </div>
-            <p className="text-[11px] text-slate-500">
-              Defines the quadratic optimization objective function and covariance penalty.
-            </p>
+            <span className="text-[10px] text-slate-500 font-mono block">
+              Parameterizes risk aversion coefficient λ in Black-Litterman.
+            </span>
           </div>
 
           {/* Academic Contamination Protocol Switch (4 cols) */}
-          <div className="lg:col-span-4 space-y-2">
-            <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
-              <span>MASS Contamination Shield</span>
-              <span className="text-[10px] text-sky-400 font-mono">Academic Innovation</span>
+          <div className="md:col-span-4 space-y-1.5">
+            <label className="block font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>CONTAMINATION SHIELD</span>
+              <span className="text-[9px] text-sky-400 font-mono bg-sky-500/10 px-1 py-0.2 rounded border border-sky-500/20">
+                RESEARCH INNOVATION
+              </span>
             </label>
             <div
               onClick={() => setEnableMasking(!enableMasking)}
-              className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+              className={`p-2 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
                 enableMasking
-                  ? 'bg-indigo-950/30 border-indigo-500/40 shadow-md shadow-indigo-500/10'
-                  : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                  ? 'bg-sky-500/10 border-sky-500/40'
+                  : 'bg-obsidian-950 border-white/[0.06] hover:border-white/[0.12]'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-lg ${enableMasking ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                  <Shield className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-slate-200 block">
-                    {enableMasking ? 'Masking Shield Active' : 'Unmasked Real Identifiers'}
+              <div className="flex items-center gap-2">
+                <Shield className={`w-4 h-4 ${enableMasking ? 'text-sky-400' : 'text-slate-500'}`} />
+                <div className="font-mono text-xs">
+                  <span className={`block font-semibold ${enableMasking ? 'text-sky-300' : 'text-slate-300'}`}>
+                    {enableMasking ? 'Anonymization Active' : 'Real Ticker Identifiers'}
                   </span>
-                  <span className="text-[10px] text-slate-400 block">
+                  <span className="text-[10px] text-slate-500 block">
                     {enableMasking ? 'TSLA -> Asset_Alpha (Anti-Lookahead)' : 'Standard entity names'}
                   </span>
                 </div>
               </div>
-              <div className={`w-10 h-5 rounded-full transition-colors relative ${enableMasking ? 'bg-indigo-500' : 'bg-slate-800'}`}>
-                <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-transform ${enableMasking ? 'right-1' : 'left-1'}`} />
+
+              <div className={`w-8 h-4 rounded-full transition-colors relative ${enableMasking ? 'bg-sky-500' : 'bg-obsidian-800 border border-white/[0.1]'}`}>
+                <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all ${enableMasking ? 'right-0.5' : 'left-0.5'}`} />
               </div>
             </div>
-            <p className="text-[11px] text-slate-500">
-              Anonymizes assets to prove zero look-ahead memorization during backtesting.
-            </p>
+            <span className="text-[10px] text-slate-500 font-mono block">
+              Proves zero look-ahead bias by masking corporate identities from LLMs.
+            </span>
           </div>
         </div>
 
         {/* Stock Universe Presets & Ticker Selector */}
-        <div className="space-y-3 pt-2 border-t border-slate-800/80">
+        <div className="space-y-2 pt-2 border-t border-white/[0.06]">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-sky-400" />
-              Curated Institutional Baskets ({currentMarket})
+              CURATED SECTOR BASKETS
             </span>
 
             {/* Quick Universe Chips */}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 font-mono text-xs">
               {currentPresets.map((preset) => (
                 <button
                   key={preset.id}
                   type="button"
                   onClick={() => handleSelectPreset(preset)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all border ${
+                  className={`px-2.5 py-1 rounded text-xs transition-all border ${
                     selectedUniverseId === preset.id
-                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-sm'
-                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                      ? 'bg-sky-500/15 text-sky-300 border-sky-500/40 font-semibold'
+                      : 'bg-obsidian-950 text-slate-400 border-white/[0.06] hover:text-white'
                   }`}
                 >
                   {preset.name}
@@ -355,11 +369,11 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           {/* Active Tickers Chip Array & Add Input */}
-          <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-950 border border-slate-800 rounded-2xl min-h-[52px]">
+          <div className="flex flex-wrap items-center gap-1.5 p-2.5 bg-obsidian-950 border border-white/[0.06] rounded-lg min-h-[46px]">
             {tickers.map((t) => (
               <span
                 key={t}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold bg-slate-800/80 text-sky-300 border border-slate-700/60 shadow-sm"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono font-bold bg-obsidian-850 text-sky-300 border border-white/[0.08]"
               >
                 {t}
                 <button
@@ -373,18 +387,18 @@ export const HomePage: React.FC<HomePageProps> = ({
             ))}
 
             {/* Add Custom Ticker Input */}
-            <form onSubmit={handleAddTicker} className="inline-flex items-center gap-1.5">
+            <form onSubmit={handleAddTicker} className="inline-flex items-center gap-1">
               <input
                 type="text"
                 value={newTickerInput}
                 onChange={(e) => setNewTickerInput(e.target.value)}
-                placeholder="+ Add symbol (e.g. TSM)"
+                placeholder="+ Add symbol (e.g. AMD)"
                 className="bg-transparent border-none text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none w-36 py-1 px-2"
               />
               {newTickerInput && (
                 <button
                   type="submit"
-                  className="p-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30 hover:bg-sky-500/30"
+                  className="p-1 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 hover:bg-sky-500/30 text-xs font-mono"
                 >
                   <Plus className="w-3 h-3" />
                 </button>
@@ -395,7 +409,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         {/* Error message */}
         {errorMessage && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
+          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 font-mono text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
             <span>{errorMessage}</span>
           </div>
@@ -403,29 +417,29 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         {/* Primary Call to Action Button */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-slate-400">
-            Current basket: <strong className="text-slate-200">{tickers.length} assets</strong> | LLM Engine: <span className="font-mono text-sky-300">Groq LPU (Qwen 3.8 27B)</span>
+          <div className="font-mono text-xs text-slate-400">
+            Selected Basket: <strong className="text-white">{tickers.length} assets</strong> &bull; Inference Engine: <span className="text-sky-400 font-semibold">Groq LPU (Qwen 3.8 27B)</span>
           </div>
 
           <button
             type="button"
             disabled={isAnalyzing}
             onClick={handleRunOptimization}
-            className={`w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2.5 shadow-xl ${
+            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-mono font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg ${
               isAnalyzing
-                ? 'bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700'
-                : 'bg-gradient-to-r from-sky-500 via-indigo-600 to-sky-500 bg-size-200 hover:bg-pos-100 text-white shadow-sky-500/25 hover:scale-[1.02] active:scale-[0.98]'
+                ? 'bg-obsidian-800 text-slate-500 cursor-not-allowed border border-white/[0.08]'
+                : 'bg-sky-500 hover:bg-sky-400 text-obsidian-950 font-bold hover:scale-[1.01] active:scale-[0.99]'
             }`}
           >
             {isAnalyzing ? (
               <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Adversarial Debate in Progress...</span>
+                <span className="w-3.5 h-3.5 border-2 border-slate-900 border-t-white rounded-full animate-spin" />
+                <span>DIALECTICAL SOLVER RUNNING...</span>
               </>
             ) : (
               <>
-                <Play className="w-4 h-4 fill-white" />
-                <span>Run Multi-Agent Optimization</span>
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>RUN MULTI-AGENT COGNITIVE ENGINE</span>
               </>
             )}
           </button>
@@ -437,44 +451,44 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Final Allocation Dashboard (Appears once optimization completes) */}
       {optimizationResult && (
-        <div className="space-y-6 animate-fadeIn">
-          {/* Action Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-sky-950/40 via-indigo-950/30 to-slate-900 border border-sky-500/30 shadow-xl">
+        <div className="space-y-6">
+          {/* Action Header Ribbon */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-xl bg-obsidian-900 border border-emerald-500/30 shadow-xl">
             <div>
-              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                <CheckCircle className="w-4 h-4" />
-                Optimization Converged Successfully
+              <span className="font-mono text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 mb-0.5">
+                <CheckCircle className="w-3.5 h-3.5" />
+                CONVEX QUADRATIC SOLVER CONVERGED
               </span>
-              <h2 className="text-lg font-extrabold text-white">
-                MASS Mathematical Allocation &amp; Trade Blueprint
+              <h2 className="text-base font-bold text-white tracking-tight">
+                MASS Mathematical Allocation &amp; Trade Blueprint ({optimizationResult.method_used})
               </h2>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 font-mono text-xs">
               <button
                 type="button"
                 onClick={handleExportMemo}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg bg-obsidian-950 text-slate-300 hover:text-white border border-white/[0.08] hover:border-white/[0.15] transition-all flex items-center gap-1.5"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Memo</span>
+                <Download className="w-3 h-3" />
+                <span>Export Memo (.md)</span>
               </button>
 
               <button
                 type="button"
                 disabled={isDeployingDummy}
                 onClick={handleDeployToDummyInvest}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                className="px-4 py-1.5 rounded-lg font-bold bg-emerald-500 hover:bg-emerald-400 text-obsidian-950 transition-all shadow-md flex items-center gap-1.5 hover:scale-[1.01] active:scale-[0.99]"
               >
                 <Briefcase className="w-3.5 h-3.5" />
-                <span>Deploy to Paper Trading (/dummy-invest)</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>Deploy to Virtual Tracker (/dummy-invest)</span>
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           {/* Allocation Visualizer & Order Book */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <div className="lg:col-span-5">
               <AllocationChart holdings={optimizationResult.holdings} currency={currency} />
             </div>

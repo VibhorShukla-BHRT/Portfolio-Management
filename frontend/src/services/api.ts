@@ -80,6 +80,7 @@ export async function createDummyPortfolio(payload: {
   initial_capital: number;
   holdings: any[];
   strategy_mode: string;
+  investment_date?: string;
 }): Promise<PaperPortfolioDetail> {
   const res = await fetch(`${API_BASE}/dummy-invest/create`, {
     method: 'POST',

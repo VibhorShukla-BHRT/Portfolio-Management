@@ -4,6 +4,7 @@ import os
 import re
 from typing import AsyncGenerator, Dict, List, Any, Optional
 from datetime import datetime
+from crewai import Task
 
 from agents.portfolio_agents import PortfolioAgents
 from tasks.portfolio_tasks import PortfolioTasks
@@ -105,7 +106,12 @@ async def run_multi_agent_stream(
             f"Analyze the technical momentum and trend indicators for these assets: {', '.join(clean_tickers)}. "
             "Report 50-SMA vs 200-SMA Golden/Death Cross setups and volatility regimes in 2 paragraphs."
         )
-        return agent.execute_task(type('Task', (), {'description': task_prompt})())
+        task = Task(
+            description=task_prompt,
+            expected_output="Two paragraphs analyzing 50/200 SMA trends and volatility regime",
+            agent=agent
+        )
+        return agent.execute_task(task)
 
     try:
         quant_output = await loop.run_in_executor(None, run_quant)
@@ -135,7 +141,12 @@ async def run_multi_agent_stream(
             f"For assets {', '.join(clean_tickers)}, construct a strong Bull Thesis. "
             "Highlight product innovation, operating margins, earnings momentum, and macroeconomic tailwinds in 2 paragraphs."
         )
-        return agent.execute_task(type('Task', (), {'description': task_prompt})())
+        task = Task(
+            description=task_prompt,
+            expected_output="Two paragraphs outlining upside catalysts and bull thesis",
+            agent=agent
+        )
+        return agent.execute_task(task)
 
     try:
         bull_output = await loop.run_in_executor(None, run_bull)
@@ -165,7 +176,12 @@ async def run_multi_agent_stream(
             f"For assets {', '.join(clean_tickers)}, construct a rigorous Bear Anti-Thesis. "
             "Examine valuation multiples, debt load, regulatory headwinds, and risk of multiple compression in 2 paragraphs."
         )
-        return agent.execute_task(type('Task', (), {'description': task_prompt})())
+        task = Task(
+            description=task_prompt,
+            expected_output="Two paragraphs outlining downside risks and bear anti-thesis",
+            agent=agent
+        )
+        return agent.execute_task(task)
 
     try:
         bear_output = await loop.run_in_executor(None, run_bear)
@@ -198,7 +214,12 @@ async def run_multi_agent_stream(
             f"Output an objective synthesis in 1 paragraph, followed STRICTLY by a JSON dictionary of your expected return views: "
             f"{{\"{clean_tickers[0]}\": 0.05, ...}} with values between -0.15 and 0.25."
         )
-        return agent.execute_task(type('Task', (), {'description': task_prompt})())
+        task = Task(
+            description=task_prompt,
+            expected_output="One synthesis paragraph followed strictly by a JSON dictionary of asset views",
+            agent=agent
+        )
+        return agent.execute_task(task)
 
     try:
         debate_output = await loop.run_in_executor(None, run_debate)

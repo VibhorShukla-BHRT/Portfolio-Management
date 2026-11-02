@@ -17,7 +17,6 @@ const PALETTE = [
   '#a855f7', // Purple
   '#06b6d4', // Cyan
   '#ec4899', // Pink
-  '#84cc16', // Lime
 ];
 
 export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings, currency }) => {
@@ -35,20 +34,20 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings, curr
     if (active && payload && payload.length) {
       const item = payload[0].payload;
       return (
-        <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-xl text-xs space-y-1">
-          <div className="flex items-center gap-2 font-bold text-slate-100">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+        <div className="bg-obsidian-950 border border-white/[0.1] p-3 rounded-lg shadow-2xl font-mono text-xs space-y-1">
+          <div className="flex items-center gap-2 font-bold text-white">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
             <span>{item.name}</span>
             <span className="text-slate-400 font-normal">({item.company})</span>
           </div>
           <div className="text-slate-300">
-            Optimal Weight: <strong className="text-sky-400">{item.value.toFixed(2)}%</strong>
+            Target Weight: <strong className="text-sky-400 font-bold">{item.value.toFixed(2)}%</strong>
           </div>
           <div className="text-slate-300">
-            Sized Capital: <strong className="text-white">{currency}{item.allocated_cash.toLocaleString()}</strong>
+            Capital Allocated: <strong className="text-white">{currency}{item.allocated_cash.toLocaleString()}</strong>
           </div>
           <div className="text-slate-400 text-[11px]">
-            Discrete Shares: {item.shares} @ {currency}{item.price.toFixed(2)}
+            Order: {item.shares} shares @ {currency}{item.price.toFixed(2)}
           </div>
         </div>
       );
@@ -57,51 +56,51 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdings, curr
   };
 
   return (
-    <div className="bg-[#0f1523] border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-4">
+    <div className="bg-obsidian-900 border border-white/[0.08] rounded-xl p-5 shadow-xl flex flex-col justify-between">
+      <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
-            <PieIcon className="w-4 h-4" />
-          </div>
-          <h3 className="text-sm font-bold text-white tracking-tight">
-            Continuous Bayesian Asset Allocation
+          <PieIcon className="w-4 h-4 text-sky-400" />
+          <h3 className="font-mono text-xs font-bold text-white tracking-wide uppercase">
+            Convex Weight Allocation Matrix
           </h3>
         </div>
-        <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-          &sum; w_i = 100%
+        <span className="font-mono text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+          Σ w_i = 100%
         </span>
       </div>
 
-      <div className="h-64 w-full relative">
+      <div className="h-56 w-full relative">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
-              innerRadius={65}
-              outerRadius={95}
-              paddingAngle={3}
+              innerRadius={60}
+              outerRadius={88}
+              paddingAngle={2}
               dataKey="value"
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} stroke="#0f1523" strokeWidth={2} />
+                <Cell key={`cell-${index}`} fill={entry.color} stroke="#090b10" strokeWidth={2} />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xs text-slate-400 font-medium">Model</span>
-          <span className="text-sm font-bold text-white">Black-Litterman</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none font-mono">
+          <span className="text-[10px] text-slate-500 uppercase">SOLVER</span>
+          <span className="text-xs font-bold text-slate-200">Black-Litterman</span>
         </div>
       </div>
 
-      {/* Legend Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-4 border-t border-slate-800/80">
+      {/* High-density Legend Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-4 border-t border-white/[0.08]">
         {data.map((item) => (
-          <div key={item.name} className="flex items-center gap-2 text-xs">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-            <span className="font-semibold text-slate-200">{item.name}</span>
-            <span className="font-mono text-slate-400 text-[11px] ml-auto">{item.value.toFixed(1)}%</span>
+          <div key={item.name} className="flex items-center gap-2 p-1.5 rounded bg-obsidian-950 border border-white/[0.04]">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+            <div className="min-w-0 font-mono text-[11px] leading-tight">
+              <span className="font-bold text-slate-200 block truncate">{item.name}</span>
+              <span className="text-slate-400 text-[10px]">{item.value.toFixed(1)}%</span>
+            </div>
           </div>
         ))}
       </div>

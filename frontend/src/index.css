@@ -4,26 +4,52 @@
 
 @layer base {
   body {
-    background-color: #0a0d14;
-    color: #f1f5f9;
+    background-color: #07090e;
+    color: #e2e8f0;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-/* Custom scrollbars */
+/* Tabular numbers for all financial values */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Crisp institutional scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #090b10;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  background: #1e2434;
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #2a3349;
+}
+
+/* Subtle hairline borders */
+.terminal-card {
+  background-color: #0d1017;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.terminal-card-subtle {
+  background-color: #090b10;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

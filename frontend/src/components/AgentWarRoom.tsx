@@ -11,9 +11,10 @@ import {
   CheckCircle2,
   Loader2,
   Clock,
+  Terminal,
   ChevronDown,
   ChevronUp,
-  Bot
+  Maximize2
 } from 'lucide-react';
 
 interface AgentWarRoomProps {
@@ -23,179 +24,236 @@ interface AgentWarRoomProps {
 
 interface AgentMeta {
   id: string;
+  step: string;
   name: string;
   role: string;
   icon: React.ReactNode;
-  color: string;
 }
 
 const AGENTS_META: AgentMeta[] = [
   {
     id: 'screener',
-    name: 'Universe Screener & Ranker',
-    role: 'Relative Sector Ranking & Universe Pre-Selection',
-    icon: <Search className="w-4 h-4" />,
-    color: 'from-blue-500/20 to-sky-500/20 text-sky-400 border-sky-500/30'
+    step: '01',
+    name: 'Universe Screener',
+    role: 'Cross-Sector Pre-Selection & Correlation Filtering',
+    icon: <Search className="w-3.5 h-3.5" />
   },
   {
     id: 'quant',
-    name: 'Quantitative Financial Analyst',
-    role: '50/200-SMA Indicators & Historical Volatility',
-    icon: <Activity className="w-4 h-4" />,
-    color: 'from-cyan-500/20 to-teal-500/20 text-cyan-400 border-cyan-500/30'
+    step: '02',
+    name: 'Quantitative Analyst',
+    role: '50/200-SMA Golden Cross & Volatility Surface',
+    icon: <Activity className="w-3.5 h-3.5" />
   },
   {
     id: 'bull',
+    step: '03',
     name: 'Bull Market Researcher',
     role: 'Growth Catalysts, Earnings Momentum & Upside Thesis',
-    icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
-    color: 'from-emerald-500/20 to-green-500/20 text-emerald-400 border-emerald-500/30'
+    icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
   },
   {
     id: 'bear',
+    step: '04',
     name: 'Bear Market Researcher',
-    role: 'Downside Risks, Margin Compression & Headwinds',
-    icon: <TrendingDown className="w-4 h-4 text-rose-400" />,
-    color: 'from-rose-500/20 to-red-500/20 text-rose-400 border-rose-500/30'
+    role: 'Valuation Multiples, Debt Load & Downside Risks',
+    icon: <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
   },
   {
     id: 'debate',
-    name: 'Dialectical Debate Orchestrator',
-    role: 'Adversarial Synthesis & Bayesian Views Vector Q',
-    icon: <Scale className="w-4 h-4 text-amber-400" />,
-    color: 'from-amber-500/20 to-yellow-500/20 text-amber-400 border-amber-500/30'
+    step: '05',
+    name: 'Dialectical Synthesizer',
+    role: 'Adversarial Resolution & Bayesian View Vector Q',
+    icon: <Scale className="w-3.5 h-3.5 text-amber-400" />
   },
   {
     id: 'risk',
-    name: 'Risk & Compliance Manager',
-    role: 'Drawdown Boundaries & Tail Risk Constraints',
-    icon: <ShieldCheck className="w-4 h-4 text-indigo-400" />,
-    color: 'from-indigo-500/20 to-purple-500/20 text-indigo-400 border-indigo-500/30'
+    step: '06',
+    name: 'Risk & Compliance',
+    role: 'Covariance Boundaries & Tail Risk Constraints',
+    icon: <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
   },
   {
     id: 'portfolio_manager',
+    step: '07',
     name: 'Chief Portfolio Manager',
     role: 'Black-Litterman Convex Solver & Order Sizing',
-    icon: <Briefcase className="w-4 h-4 text-purple-400" />,
-    color: 'from-purple-500/20 to-violet-500/20 text-purple-400 border-purple-500/30'
+    icon: <Briefcase className="w-3.5 h-3.5 text-sky-400" />
   }
 ];
 
 export const AgentWarRoom: React.FC<AgentWarRoomProps> = ({ events, isAnalyzing }) => {
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'console'>('pipeline');
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedAgent(prev => (prev === id ? null : id));
   };
 
+  const completedCount = AGENTS_META.filter(a => events[a.id]?.status === 'complete').length;
+
   return (
-    <div className="bg-[#0f1523] border border-slate-800 rounded-2xl p-6 shadow-xl">
-      <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-800/80">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-sky-500/10 rounded-lg text-sky-400 border border-sky-500/20">
-            <Bot className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
-              Multi-Agent Dialectical War Room
-              {isAnalyzing && (
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-500/20 text-sky-300 animate-pulse border border-sky-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
-                  Agents Debating Live
-                </span>
-              )}
-            </h2>
-            <p className="text-xs text-slate-400">
-              7 specialized autonomous agents synthesizing qualitative news and quantitative market microstructure.
-            </p>
-          </div>
+    <div className="bg-obsidian-900 border border-white/[0.08] rounded-xl overflow-hidden shadow-xl">
+      {/* Terminal Title Bar */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-obsidian-950 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2">
+          <Terminal className="w-4 h-4 text-sky-400" />
+          <span className="font-mono text-xs font-semibold tracking-wide text-white">
+            MASS 7-AGENT DIALECTICAL REASONING PIPELINE
+          </span>
+          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-white/[0.06] text-slate-300 border border-white/[0.08]">
+            {completedCount} / 7 COMPLETE
+          </span>
+        </div>
+
+        {/* View Switcher */}
+        <div className="flex items-center bg-obsidian-900 rounded p-0.5 border border-white/[0.06] font-mono text-[11px]">
+          <button
+            onClick={() => setActiveTab('pipeline')}
+            className={`px-2.5 py-1 rounded transition-colors ${
+              activeTab === 'pipeline'
+                ? 'bg-obsidian-800 text-sky-400 font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            PIPELINE MATRIX
+          </button>
+          <button
+            onClick={() => setActiveTab('console')}
+            className={`px-2.5 py-1 rounded transition-colors ${
+              activeTab === 'console'
+                ? 'bg-obsidian-800 text-sky-400 font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            LIVE CONSOLE STREAM
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
-        {AGENTS_META.map(meta => {
-          const state: Partial<AgentEvent> = events[meta.id] || { status: 'pending' };
-          const isPending = state.status === 'pending';
-          const isCurrentAnalyzing = state.status === 'analyzing';
-          const isComplete = state.status === 'complete';
-          const isExpanded = expandedAgent === meta.id;
+      {/* Main Body */}
+      {activeTab === 'pipeline' ? (
+        <div className="p-4 space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-2">
+            {AGENTS_META.map((meta) => {
+              const event = events[meta.id];
+              const isRunning = event?.status === 'analyzing';
+              const isDone = event?.status === 'complete';
+              const isWaiting = !isRunning && !isDone;
 
-          return (
-            <div
-              key={meta.id}
-              onClick={() => state.output && toggleExpand(meta.id)}
-              className={`rounded-xl border transition-all duration-200 flex flex-col justify-between p-3.5 ${
-                isCurrentAnalyzing
-                  ? 'bg-sky-950/20 border-sky-500/40 shadow-lg shadow-sky-500/10 ring-1 ring-sky-500/30'
-                  : isComplete
-                  ? 'bg-slate-900/80 border-slate-800 hover:border-slate-700 cursor-pointer'
-                  : 'bg-slate-950/40 border-slate-800/40 opacity-60'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className={`p-1.5 rounded-lg border bg-gradient-to-br ${meta.color}`}>
-                    {meta.icon}
-                  </div>
-                  {/* Status Badge */}
-                  <div>
-                    {isCurrentAnalyzing && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
+              return (
+                <div
+                  key={meta.id}
+                  onClick={() => isDone && toggleExpand(meta.id)}
+                  className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                    isDone
+                      ? 'bg-obsidian-850 border-emerald-500/30 hover:border-emerald-500/50'
+                      : isRunning
+                      ? 'bg-obsidian-850 border-sky-500/50 shadow-sm shadow-sky-500/10'
+                      : 'bg-obsidian-950/60 border-white/[0.05] opacity-60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5 font-mono text-[10px]">
+                    <span className="text-slate-500 font-bold">[{meta.step}]</span>
+                    {isRunning && (
+                      <span className="flex items-center gap-1 text-sky-400 font-semibold">
                         <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                        Live
+                        RUNNING
                       </span>
                     )}
-                    {isComplete && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                    {isDone && (
+                      <span className="flex items-center gap-1 text-emerald-400 font-semibold">
                         <CheckCircle2 className="w-2.5 h-2.5" />
-                        Done
+                        RESOLVED
                       </span>
                     )}
-                    {isPending && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400 bg-slate-800/60 px-1.5 py-0.5 rounded">
-                        <Clock className="w-2.5 h-2.5" />
-                        Queue
-                      </span>
+                    {isWaiting && (
+                      <span className="text-slate-600 font-medium">QUEUED</span>
                     )}
                   </div>
+
+                  <div className="flex items-center gap-1.5 mb-1 text-slate-200 font-medium text-xs">
+                    {meta.icon}
+                    <span className="truncate">{meta.name}</span>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
+                    {meta.role}
+                  </p>
+
+                  {isDone && (
+                    <div className="mt-2 pt-1.5 border-t border-white/[0.06] text-[10px] font-mono text-sky-400 flex items-center justify-between">
+                      <span>View Output</span>
+                      {expandedAgent === meta.id ? (
+                        <ChevronUp className="w-3 h-3" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3" />
+                      )}
+                    </div>
+                  )}
                 </div>
+              );
+            })}
+          </div>
 
-                <h3 className="text-xs font-bold text-slate-200 leading-tight mb-1">
-                  {meta.name}
-                </h3>
-                <p className="text-[10px] text-slate-400 leading-normal line-clamp-2">
-                  {meta.role}
-                </p>
+          {/* Expanded Agent Output Panel */}
+          {expandedAgent && events[expandedAgent]?.output && (
+            <div className="mt-4 p-4 rounded-lg bg-obsidian-950 border border-white/[0.08] font-mono text-xs space-y-2">
+              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+                <span className="text-sky-400 font-bold uppercase">
+                  AGENT LOG: {AGENTS_META.find(a => a.id === expandedAgent)?.name}
+                </span>
+                <button
+                  onClick={() => setExpandedAgent(null)}
+                  className="text-slate-500 hover:text-slate-300 text-[11px]"
+                >
+                  [CLOSE]
+                </button>
               </div>
+              <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">
+                {events[expandedAgent]?.output}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Console Stream View */
+        <div className="p-4 bg-obsidian-950 font-mono text-xs max-h-80 overflow-y-auto space-y-2 select-text">
+          <div className="text-slate-500 text-[11px] pb-2 border-b border-white/[0.06]">
+            MASS Cognitive Stream &bull; Groq LPU Engine &bull; Qwen 3.8 27B Quantized
+          </div>
 
-              {state.output && (
-                <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-sky-400 font-medium">
-                  <span>View output</span>
-                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          {Object.keys(events).length === 0 && !isAnalyzing && (
+            <div className="text-slate-600 py-6 text-center">
+              System ready. Configure portfolio capital and click RUN ENGINE.
+            </div>
+          )}
+
+          {isAnalyzing && Object.keys(events).length === 0 && (
+            <div className="text-sky-400 flex items-center gap-2">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>[00:00:01] Engaging cognitive pipeline and establishing LPU thread...</span>
+            </div>
+          )}
+
+          {Object.entries(events).map(([id, event]) => (
+            <div key={id} className="space-y-1">
+              <div className="flex items-center gap-2 text-[11px]">
+                <span className="text-slate-500">[AGENT]</span>
+                <span className="text-sky-400 font-bold">[{event.agent_name || id.toUpperCase()}]</span>
+                <span className={`px-1 rounded text-[10px] ${
+                  event.status === 'complete' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-sky-500/10 text-sky-400'
+                }`}>
+                  {event.status?.toUpperCase()}
+                </span>
+              </div>
+              {event.output && (
+                <div className="pl-4 border-l border-white/[0.08] text-slate-300 text-[11px] leading-relaxed">
+                  {event.output}
                 </div>
               )}
             </div>
-          );
-        })}
-      </div>
-
-      {/* Expanded Agent Thought Drawer */}
-      {expandedAgent && events[expandedAgent]?.output && (
-        <div className="mt-4 p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs animate-fadeIn">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
-            <span className="font-semibold text-sky-300">
-              {AGENTS_META.find(a => a.id === expandedAgent)?.name} &mdash; Detailed Output
-            </span>
-            <button
-              onClick={() => setExpandedAgent(null)}
-              className="text-slate-400 hover:text-white text-[11px]"
-            >
-              Close
-            </button>
-          </div>
-          <p className="text-slate-300 whitespace-pre-wrap leading-relaxed font-sans max-h-60 overflow-y-auto pr-2">
-            {events[expandedAgent].output}
-          </p>
+          ))}
         </div>
       )}
     </div>
