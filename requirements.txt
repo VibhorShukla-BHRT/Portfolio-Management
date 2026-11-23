@@ -5,9 +5,13 @@ pandas
 numpy
 python-dotenv
 chromadb
-pypfopt
+pyportfolioopt
 json_repair
 scipy
 duckduckgo-search
 requests
 pydantic
+pytz
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+sse-starlette>=2.1.0

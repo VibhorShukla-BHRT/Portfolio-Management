@@ -17,6 +17,7 @@ SPACE_NAME = os.getenv("HF_SPACE_NAME", "mass-portfolio-system")
 REPO_ID = f"{USERNAME}/{SPACE_NAME}"
 
 GROQ_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
 
 def deploy():
     if not TOKEN:
@@ -58,7 +59,7 @@ def deploy():
         print("[3/4] Syncing GROQ_API_KEY secret to Space...")
         try:
             api.add_space_secret(repo_id=REPO_ID, key="GROQ_API_KEY", value=GROQ_KEY)
-            api.add_space_secret(repo_id=REPO_ID, key="GROQ_MODEL", value="qwen/qwen3.8-27b")
+            api.add_space_secret(repo_id=REPO_ID, key="GROQ_MODEL", value=GROQ_MODEL)
             print(" -> Space secrets configured!")
         except Exception as e:
             print(f" -> Note on secret sync: {e}")
