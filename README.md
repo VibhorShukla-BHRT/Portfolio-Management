@@ -13,6 +13,9 @@ An institutional-grade, multi-agent financial asset management architecture that
 > **Author:** Vibhor Shukla (Roll No: 23115107)  
 > **Repository:** [GitHub](https://github.com/VibhorShukla-BHRT/Portfolio-Management)
 
+
+Usage of AI: AI was used for editing, .md file generations and proof reading, to ensure best quality.
+
 ---
 
 ## 📑 Table of Contents
