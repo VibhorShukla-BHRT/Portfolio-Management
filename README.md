@@ -235,7 +235,7 @@ Instantly reproduces all empirical benchmark tables, computes continuous daily t
 ```bash
 python backtest_engine.py
 ```
-*Executes in ~3 seconds. Automatically updates `backtest_summary.md`.*
+*Executes in ~3 seconds. Automatically updates `docs/backtest_summary.md`.*
 
 ### Mode 2: Live Multi-Agent Portfolio Generation
 Executes the full 7-agent sequential workflow on live market data:
@@ -286,7 +286,14 @@ python test_list_models.py
 ├── backtest_results.json           # Active empirical allocation logs & metrics
 ├── backtest_results_unmasked_exp1.json # Experiment 1 results (Unmasked baseline)
 ├── backtest_results_masked_exp2.json   # Experiment 2 results (MASS decontaminated)
-├── backtest_summary.md             # Auto-generated markdown benchmark comparison
+├── docs/                           # Centralized documentation directory
+│   ├── Portfolio_Management_Final_Report.docx  # Full 51-page capstone report with OMML math
+│   ├── Portfolio_Management_Final_Report.pdf   # Formatted report PDF export
+│   ├── paper_ieee.tex              # IEEE standard conference paper for Overleaf
+│   ├── AD_COP_RESEARCH_PAPER.md    # Markdown research paper with equations & tables
+│   ├── STARTUP_GUIDE.md            # Quickstart and execution instructions
+│   ├── backtest_summary.md         # Auto-generated markdown benchmark comparison
+│   └── ...                         # Presentations, technical reports & literature
 ├── main.py                         # Single-run execution pipeline entrypoint
 ├── test_llm.py                     # LLM connectivity & inference diagnostic test
 ├── test_list_models.py             # OpenAI/OpenRouter model discovery utility
@@ -299,11 +306,15 @@ python test_list_models.py
 
 ## 📚 Documentation Suite
 
-For comprehensive academic details, refer to the in-depth documentation:
-- 📖 [MASTER_PROJECT_DOCUMENTATION.md](MASTER_PROJECT_DOCUMENTATION.md) — Exhaustive system specification and architecture breakdown.
-- 📊 [MASS_RESEARCH_REPORT.md](MASS_RESEARCH_REPORT.md) — Formal empirical research paper format covering theoretical formulation, sub-period traces, and publication venue roadmap.
-- 🔬 [technical_report.md](technical_report.md) — Direct benchmark evaluation juxtaposed against FinMem (Yu et al., 2023).
-- 📝 [research-paper-assessment.md](research-paper-assessment.md) — Peer-review feasibility audit and competitive landscape analysis.
+All project documentation, academic reports, research papers, and presentation slide decks are organized in the [`docs/`](docs/) directory:
+- 📄 **Capstone Final Report (Word):** [`docs/Portfolio_Management_Final_Report.docx`](docs/Portfolio_Management_Final_Report.docx) — Complete 51-page capstone report featuring native Word Math (OMML) equations and academic booktabs tables.
+- 📑 **Capstone Final Report (PDF):** [`docs/Portfolio_Management_Final_Report.pdf`](docs/Portfolio_Management_Final_Report.pdf) — Ready-to-print academic document.
+- 🖋️ **IEEE Research Paper (LaTeX):** [`docs/paper_ieee.tex`](docs/paper_ieee.tex) — Double-column IEEE conference paper ready for Overleaf compilation (zero em-dashes, humanized prose).
+- 📝 **Research Paper (Markdown):** [`docs/AD_COP_RESEARCH_PAPER.md`](docs/AD_COP_RESEARCH_PAPER.md) — Complete markdown research manuscript with mathematical proofs.
+- 🚀 **Startup & Setup Guide:** [`docs/STARTUP_GUIDE.md`](docs/STARTUP_GUIDE.md) — Step-by-step local execution instructions.
+- 📖 **Architecture Specification:** [`docs/MASTER_PROJECT_DOCUMENTATION.md`](docs/MASTER_PROJECT_DOCUMENTATION.md) — Exhaustive multi-agent system specification.
+- 🔬 **Technical Benchmark Report:** [`docs/technical_report.md`](docs/technical_report.md) — Direct benchmark evaluation against FinMem (Yu et al., 2023).
+- 📊 **Empirical Backtest Summary:** [`docs/backtest_summary.md`](docs/backtest_summary.md) — Automated quantitative summary metrics.
 
 ---
 

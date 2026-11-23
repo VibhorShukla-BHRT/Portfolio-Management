@@ -347,7 +347,8 @@ def print_academic_comparison_table(report: dict) -> None:
     print("=" * 80)
 
     # Save to markdown report file
-    with open("backtest_summary.md", "w") as f:
+    summary_path = os.path.join("docs", "backtest_summary.md") if os.path.exists("docs") else "backtest_summary.md"
+    with open(summary_path, "w") as f:
         f.write("# Multi-Agent Portfolio Management System — Empirical Evaluation\n\n")
         f.write(f"Generated at: {datetime.now().isoformat()}\n\n")
         f.write(table_md)

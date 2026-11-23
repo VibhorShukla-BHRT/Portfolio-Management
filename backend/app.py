@@ -23,7 +23,9 @@ from backend.services.dummy_invest_service import (
     list_paper_portfolios,
     get_paper_portfolio_tracking,
     delete_paper_portfolio,
-    update_paper_portfolio_investment_date
+    update_paper_portfolio_investment_date,
+    sell_holding,
+    get_portfolio_transactions
 )
 
 app = FastAPI(
@@ -56,10 +58,14 @@ class CreateDummyPortfolioRequest(BaseModel):
     initial_capital: float = Field(..., description="Initial virtual investment capital")
     holdings: List[Dict[str, Any]] = Field(..., description="List of discrete holdings sized by the optimizer")
     strategy_mode: str = Field("balanced", description="Strategy used: 'balanced', 'conservative', 'aggressive'")
-    investment_date: Optional[str] = Field("2026-10-01", description="Date of initial investment")
+    investment_date: Optional[str] = Field(None, description="Date of initial investment")
 
 class UpdateDateRequest(BaseModel):
     investment_date: str = Field(..., description="Investment date in YYYY-MM-DD format")
+
+class SellHoldingRequest(BaseModel):
+    ticker: str = Field(..., description="Stock ticker symbol to sell")
+    shares: float = Field(..., description="Number of shares to sell")
 
 
 @app.get("/api/health")
@@ -142,6 +148,21 @@ def update_date_endpoint(portfolio_id: str, req: UpdateDateRequest):
 def list_dummy_investments():
     """Returns all user dummy investment portfolios."""
     return list_paper_portfolios()
+
+
+@app.post("/api/dummy-invest/{portfolio_id}/sell")
+def sell_portfolio_holding(portfolio_id: str, req: SellHoldingRequest):
+    """Sells shares of a holding from a paper portfolio, updates cash balance, and records transaction."""
+    res = sell_holding(portfolio_id, req.ticker, req.shares)
+    if "error" in res:
+        raise HTTPException(status_code=400, detail=res["error"])
+    return res
+
+
+@app.get("/api/dummy-invest/{portfolio_id}/transactions")
+def get_portfolio_transaction_history(portfolio_id: str):
+    """Returns the full BUY/SELL transaction history for a paper portfolio."""
+    return get_portfolio_transactions(portfolio_id)
 
 
 @app.get("/api/dummy-invest/{portfolio_id}")

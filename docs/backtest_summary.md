@@ -1,6 +1,6 @@
 # Multi-Agent Portfolio Management System — Empirical Evaluation
 
-Generated at: 2026-10-29T13:59:43.483542
+Generated at: 2026-11-23T11:50:28.124209
 
 
 | Ticker / Portfolio | Strategy / Model | Cumulative Return (%) | Sharpe Ratio | Daily Volatility (%) | Max Drawdown (%) |

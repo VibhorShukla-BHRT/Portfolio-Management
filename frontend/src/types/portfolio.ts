@@ -24,7 +24,7 @@ export interface HoldingAllocation {
   allocated_cash: number;
   currency: string;
   market: MarketType;
-  change_pct: number;
+  change_pct?: number;
 }
 
 export interface PortfolioMetrics {
@@ -131,4 +131,29 @@ export interface PaperPortfolioDetail {
   summary: PaperPortfolioSummary;
   holdings: PaperHolding[];
   history: PaperSnapshot[];
+}
+
+export interface Transaction {
+  id: number;
+  portfolio_id: string;
+  ticker: string;
+  action: 'BUY' | 'SELL';
+  shares: number;
+  price: number;
+  total_value: number;
+  realized_pnl: number;
+  timestamp: string;
+}
+
+export interface SellResult {
+  status: string;
+  ticker: string;
+  shares_sold: number;
+  sell_price: number;
+  sell_value: number;
+  realized_pnl: number;
+  remaining_shares: number;
+  new_cash_balance: number;
+  currency: string;
+  message?: string;
 }

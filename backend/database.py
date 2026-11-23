@@ -8,8 +8,9 @@ DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 def get_connection():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 def init_db():
@@ -67,6 +68,27 @@ def init_db():
         FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
     )
     """)
+    
+    # Portfolio transaction history ledger (BUY / SELL orders)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        portfolio_id TEXT NOT NULL,
+        ticker TEXT NOT NULL,
+        action TEXT NOT NULL, -- 'BUY' or 'SELL'
+        shares REAL NOT NULL,
+        price REAL NOT NULL,
+        total_value REAL NOT NULL,
+        realized_pnl REAL DEFAULT 0.0,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
+    )
+    """)
+
+    # Performance indexes
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_holdings_portfolio ON holdings(portfolio_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_portfolio ON portfolio_snapshots(portfolio_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_portfolio ON transactions(portfolio_id)")
     
     conn.commit()
     conn.close()

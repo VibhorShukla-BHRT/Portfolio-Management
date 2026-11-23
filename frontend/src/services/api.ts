@@ -1,4 +1,4 @@
-import { CuratedUniverses, OptimizationResult, PaperPortfolio, PaperPortfolioDetail } from '../types/portfolio';
+import { CuratedUniverses, OptimizationResult, PaperPortfolio, PaperPortfolioDetail, Transaction, SellResult } from '../types/portfolio';
 
 const API_BASE = '/api';
 
@@ -120,4 +120,27 @@ export async function deleteDummyPortfolio(portfolioId: string): Promise<void> {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error('Failed to delete portfolio');
+}
+
+export async function sellDummyHolding(
+  portfolioId: string,
+  ticker: string,
+  shares: number
+): Promise<SellResult> {
+  const res = await fetch(`${API_BASE}/dummy-invest/${portfolioId}/sell`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticker, shares }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to sell holding' }));
+    throw new Error(err.detail || 'Failed to sell holding');
+  }
+  return res.json();
+}
+
+export async function getDummyTransactions(portfolioId: string): Promise<Transaction[]> {
+  const res = await fetch(`${API_BASE}/dummy-invest/${portfolioId}/transactions`);
+  if (!res.ok) throw new Error('Failed to fetch transaction history');
+  return res.json();
 }

@@ -1,4 +1,5 @@
 import time
+import math
 from typing import Dict, List, Any, Optional
 import yfinance as yf
 import pandas as pd
@@ -109,14 +110,22 @@ def get_quote(ticker: str) -> Dict[str, Any]:
         tk = yf.Ticker(ticker)
         # Fetch 5-day history for fast quote & day change calculation
         hist = tk.history(period="5d")
-        if hist.empty:
+        valid_closes = hist['Close'].dropna() if (not hist.empty and 'Close' in hist) else pd.Series(dtype=float)
+        if valid_closes.empty:
             price = 100.0
             change_pct = 0.0
             prev_close = 100.0
         else:
-            price = float(hist['Close'].iloc[-1])
-            prev_close = float(hist['Close'].iloc[-2]) if len(hist) > 1 else price
+            price = float(valid_closes.iloc[-1])
+            prev_close = float(valid_closes.iloc[-2]) if len(valid_closes) > 1 else price
             change_pct = float(((price - prev_close) / prev_close) * 100) if prev_close else 0.0
+
+        if math.isnan(price):
+            price = 100.0
+        if math.isnan(prev_close):
+            prev_close = price
+        if math.isnan(change_pct):
+            change_pct = 0.0
 
         is_indian = ticker.endswith(".NS") or ticker.endswith(".BO")
         currency = "₹" if is_indian else "$"

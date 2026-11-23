@@ -42,13 +42,13 @@ def _get_historical_trajectory(
     cash_balance: float,
     market: str,
     timeframe: str,
-    investment_date: Optional[str] = "2026-10-01",
+    investment_date: Optional[str] = None,
     initial_capital: float = 0.0
 ) -> List[Dict[str, Any]]:
     """
     Computes historical portfolio valuation and benchmark performance.
-    STRICTLY bounded by the user's investment date (default: Oct 2026) so the X-axis
-    never shows misleading pre-investment dates like Nov 2025.
+    STRICTLY bounded by the user's investment date so the X-axis
+    never shows misleading pre-investment dates.
     """
     tickers = list(holdings_dict.keys())
     if not tickers:
@@ -56,7 +56,11 @@ def _get_historical_trajectory(
         
     benchmark_sym = "^NSEI" if market == "IN" else "^GSPC"
     now_dt = pd.to_datetime(datetime.now())
-    inv_dt = pd.to_datetime(investment_date) if investment_date else (now_dt - pd.DateOffset(days=32))
+    inv_date_str = (investment_date.strip() if investment_date and str(investment_date).strip() else None) or datetime.now().strftime("%Y-%m-%d")
+    try:
+        inv_dt = pd.to_datetime(inv_date_str)
+    except Exception:
+        inv_dt = now_dt
     
     clean_tf = timeframe.upper().strip()
     all_syms = tickers + [benchmark_sym]
@@ -121,8 +125,9 @@ def _get_historical_trajectory(
         elif clean_tf == "1M":
             start_dt = max(now_dt - pd.DateOffset(days=30), inv_dt)
         else:
-            # 1Y, 5Y, ALL: Clamped strictly to the investment date (e.g. Oct 2026)!
+            # 1Y, 5Y, ALL: Clamped strictly to the investment date!
             start_dt = inv_dt
+        start_dt = max(start_dt, inv_dt)
         interval = "1d"
         
     try:
@@ -130,8 +135,13 @@ def _get_historical_trajectory(
         if raw.empty:
             return []
         data = raw.dropna(how="all").ffill().bfill()
-        # Filter to ensure no points before start_dt
-        data = data[data.index >= start_dt]
+        if hasattr(data.index, "tz") and data.index.tz is not None:
+            data.index = data.index.tz_localize(None)
+        start_filter = start_dt.tz_localize(None) if hasattr(start_dt, "tz") and start_dt.tz is not None else start_dt
+        data = data[data.index >= start_filter]
+        if not is_pre_investment_backtest:
+            inv_filter = inv_dt.tz_localize(None) if hasattr(inv_dt, "tz") and inv_dt.tz is not None else inv_dt
+            data = data[data.index >= inv_filter]
     except Exception:
         return []
         
@@ -172,7 +182,7 @@ def create_paper_portfolio(
     initial_capital: float,
     holdings: List[Dict[str, Any]],
     strategy_mode: str = "balanced",
-    investment_date: Optional[str] = "2026-10-01"
+    investment_date: Optional[str] = None
 ) -> Dict[str, Any]:
     """Creates a new dummy investment paper portfolio in SQLite."""
     conn = get_connection()
@@ -182,7 +192,7 @@ def create_paper_portfolio(
     invested_cash = sum(float(h.get("allocated_cash", 0.0)) for h in holdings)
     cash_balance = max(0.0, initial_capital - invested_cash)
     now_iso = datetime.now().isoformat()
-    inv_date = investment_date or "2026-10-01"
+    inv_date = (investment_date.strip() if investment_date and str(investment_date).strip() else None) or datetime.now().strftime("%Y-%m-%d")
     
     cursor.execute("""
     INSERT INTO portfolios (id, name, market, currency, initial_capital, cash_balance, strategy_mode, investment_date, created_at, updated_at)
@@ -201,18 +211,40 @@ def create_paper_portfolio(
     ))
     
     for h in holdings:
+        h_ticker = h.get("ticker", "").strip().upper()
+        h_shares = float(h.get("shares", 0))
+        h_price = float(h.get("price", h.get("buy_price", 0.0)))
+        h_weight = float(h.get("target_weight", 0.0))
+        h_alloc = float(h.get("allocated_cash", 0.0))
+        if h_alloc == 0.0 and h_shares > 0 and h_price > 0:
+            h_alloc = round(h_shares * h_price, 2)
+            
         cursor.execute("""
         INSERT INTO holdings (portfolio_id, ticker, shares, buy_price, target_weight, allocated_cash, bought_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             portfolio_id,
-            h.get("ticker", "").strip().upper(),
-            float(h.get("shares", 0)),
-            float(h.get("price", h.get("buy_price", 0.0))),
-            float(h.get("target_weight", 0.0)),
-            float(h.get("allocated_cash", 0.0)),
+            h_ticker,
+            h_shares,
+            h_price,
+            h_weight,
+            h_alloc,
             inv_date
         ))
+
+        # Record BUY in transaction history ledger
+        if h_shares > 0:
+            cursor.execute("""
+            INSERT INTO transactions (portfolio_id, ticker, action, shares, price, total_value, realized_pnl, timestamp)
+            VALUES (?, ?, 'BUY', ?, ?, ?, 0.0, ?)
+            """, (
+                portfolio_id,
+                h_ticker,
+                h_shares,
+                h_price,
+                round(h_alloc, 2),
+                f"{inv_date}T09:30:00"
+            ))
         
     # Record initial snapshot
     cursor.execute("""
@@ -278,7 +310,7 @@ def get_paper_portfolio_tracking(portfolio_id: str, timeframe: str = "ALL") -> D
     portfolio = dict(p_row)
     market = portfolio["market"]
     currency = portfolio["currency"]
-    inv_date = portfolio.get("investment_date") or "2026-10-01"
+    inv_date = portfolio.get("investment_date") or datetime.now().strftime("%Y-%m-%d")
     
     cursor.execute("SELECT * FROM holdings WHERE portfolio_id = ?", (portfolio_id,))
     h_rows = cursor.fetchall()
@@ -385,6 +417,19 @@ def get_paper_portfolio_tracking(portfolio_id: str, timeframe: str = "ALL") -> D
                 "benchmark_return_pct": 0.0
             })
             
+    if len(history_points) == 1:
+        t_info = _get_time_strings(now_iso, market)
+        history_points.append({
+            "label": t_info["label"],
+            "date_iso": now_iso,
+            "display_market_time": t_info["display_market_time"],
+            "time_ist": t_info["time_ist"],
+            "time_edt": t_info["time_edt"],
+            "total_valuation": round(total_valuation, 2),
+            "return_pct": round(total_return_pct, 2),
+            "benchmark_return_pct": 0.0
+        })
+
     conn.close()
     
     # Benchmark index performance comparison
@@ -425,10 +470,120 @@ def get_paper_portfolio_tracking(portfolio_id: str, timeframe: str = "ALL") -> D
         "history": history_points
     }
 
+def sell_holding(portfolio_id: str, ticker: str, shares_to_sell: float) -> Dict[str, Any]:
+    """
+    Sells (partially or fully) a holding from a paper portfolio:
+    1. Looks up holding and current live market price
+    2. Computes sell value and realized P&L
+    3. Decrements shares (or deletes holding if fully liquidated)
+    4. Adds proceeds back to portfolio cash_balance
+    5. Records SELL transaction in the ledger
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM portfolios WHERE id = ?", (portfolio_id,))
+    p_row = cursor.fetchone()
+    if not p_row:
+        conn.close()
+        return {"error": "Portfolio not found."}
+        
+    portfolio = dict(p_row)
+    currency = portfolio["currency"]
+    ticker = ticker.strip().upper()
+    
+    cursor.execute("SELECT * FROM holdings WHERE portfolio_id = ? AND ticker = ?", (portfolio_id, ticker))
+    h_row = cursor.fetchone()
+    if not h_row:
+        conn.close()
+        return {"error": f"Holding {ticker} not found in this portfolio."}
+        
+    holding = dict(h_row)
+    current_shares = float(holding["shares"])
+    buy_price = float(holding["buy_price"])
+    
+    if shares_to_sell <= 0:
+        conn.close()
+        return {"error": "Shares to sell must be greater than zero."}
+        
+    if shares_to_sell > current_shares:
+        conn.close()
+        return {"error": f"Cannot sell {shares_to_sell} shares; only {current_shares} owned."}
+        
+    quote = get_quote(ticker)
+    sell_price = quote.get("price", buy_price)
+    sell_value = round(shares_to_sell * sell_price, 2)
+    cost_basis = round(shares_to_sell * buy_price, 2)
+    realized_pnl = round(sell_value - cost_basis, 2)
+    
+    remaining_shares = round(current_shares - shares_to_sell, 4)
+    now_iso = datetime.now().isoformat()
+    
+    if remaining_shares < 0.0001:
+        # Full liquidation — delete row
+        cursor.execute("DELETE FROM holdings WHERE id = ?", (holding["id"],))
+        remaining_shares = 0.0
+    else:
+        new_allocated = round(remaining_shares * buy_price, 2)
+        cursor.execute(
+            "UPDATE holdings SET shares = ?, allocated_cash = ? WHERE id = ?",
+            (remaining_shares, new_allocated, holding["id"])
+        )
+        
+    # Credit cash balance
+    new_cash = round(float(portfolio["cash_balance"]) + sell_value, 2)
+    cursor.execute(
+        "UPDATE portfolios SET cash_balance = ?, updated_at = ? WHERE id = ?",
+        (new_cash, now_iso, portfolio_id)
+    )
+    
+    # Record transaction in ledger
+    cursor.execute("""
+    INSERT INTO transactions (portfolio_id, ticker, action, shares, price, total_value, realized_pnl, timestamp)
+    VALUES (?, ?, 'SELL', ?, ?, ?, ?, ?)
+    """, (
+        portfolio_id,
+        ticker,
+        shares_to_sell,
+        sell_price,
+        sell_value,
+        realized_pnl,
+        now_iso
+    ))
+    
+    conn.commit()
+    conn.close()
+    
+    return {
+        "status": "success",
+        "ticker": ticker,
+        "shares_sold": shares_to_sell,
+        "sell_price": sell_price,
+        "sell_value": sell_value,
+        "realized_pnl": realized_pnl,
+        "remaining_shares": remaining_shares,
+        "new_cash_balance": new_cash,
+        "currency": currency,
+        "message": f"Sold {shares_to_sell} shares of {ticker} @ {currency}{sell_price:.2f} for {currency}{sell_value:,.2f}"
+    }
+
+def get_portfolio_transactions(portfolio_id: str) -> List[Dict[str, Any]]:
+    """Returns all transactions for a paper portfolio."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM transactions WHERE portfolio_id = ? ORDER BY timestamp DESC, id DESC",
+        (portfolio_id,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
 def delete_paper_portfolio(portfolio_id: str) -> bool:
     """Deletes a paper portfolio and its holdings."""
     conn = get_connection()
     cursor = conn.cursor()
+    cursor.execute("DELETE FROM transactions WHERE portfolio_id = ?", (portfolio_id,))
     cursor.execute("DELETE FROM holdings WHERE portfolio_id = ?", (portfolio_id,))
     cursor.execute("DELETE FROM portfolio_snapshots WHERE portfolio_id = ?", (portfolio_id,))
     cursor.execute("DELETE FROM portfolios WHERE id = ?", (portfolio_id,))

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, CartesianGrid } from 'recharts';
 import { PaperSnapshot, TimezoneInfo } from '../types/portfolio';
 import { TrendingUp, Globe, Layers, Calendar, ShieldCheck } from 'lucide-react';
 
@@ -43,6 +43,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
     valuation: h.total_valuation,
     return_pct: h.return_pct,
     benchmark_return_pct: h.benchmark_return_pct || 0.0,
+    benchmark_valuation: Math.round(initialCapital * (1 + (h.benchmark_return_pct || 0) / 100) * 100) / 100,
   }));
 
   const startDateLabel = data.length > 0 ? (data[0].display_market_time || data[0].label) : 'Investment Date';
@@ -141,41 +142,65 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
           </div>
         )}
 
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="label"
-              stroke="#475569"
-              fontSize={10}
-              tickLine={false}
-              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
-            />
-            <YAxis
-              stroke="#475569"
-              fontSize={10}
-              domain={['auto', 'auto']}
-              tickFormatter={(v) => `${currency}${v.toLocaleString()}`}
-              tickLine={false}
-              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="valuation"
-              name="Portfolio Valuation"
-              stroke="#10b981"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#growthGrad)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-slate-500 font-mono text-xs">
+            <div className="text-center space-y-1">
+              <TrendingUp className="w-6 h-6 mx-auto text-slate-600" />
+              <p>No valuation history recorded yet for this window.</p>
+              <p className="text-[10px] text-slate-600">Mark-to-market data will build up as live prices update.</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis
+                dataKey="label"
+                stroke="#475569"
+                fontSize={10}
+                tickLine={false}
+                axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                interval={data.length > 25 ? Math.floor(data.length / 8) : 'preserveStartEnd'}
+              />
+              <YAxis
+                stroke="#475569"
+                fontSize={10}
+                domain={['auto', 'auto']}
+                tickFormatter={(v) => `${currency}${v.toLocaleString()}`}
+                tickLine={false}
+                axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                width={75}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="valuation"
+                name="Portfolio Valuation"
+                stroke="#10b981"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#growthGrad)"
+              />
+              {showBenchmark && (
+                <Line
+                  type="monotone"
+                  dataKey="benchmark_valuation"
+                  name={benchmarkName}
+                  stroke="#818cf8"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 3"
+                  dot={false}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Timeframe Selector Pills & Benchmark Toggle */}

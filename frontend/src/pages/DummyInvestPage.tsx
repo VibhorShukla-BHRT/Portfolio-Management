@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { PaperPortfolio, PaperPortfolioDetail, MarketType } from '../types/portfolio';
+import { PaperPortfolio, PaperPortfolioDetail, MarketType, Transaction } from '../types/portfolio';
 import {
   listDummyPortfolios,
   getDummyPortfolioDetail,
   deleteDummyPortfolio,
   createDummyPortfolio,
-  updateDummyPortfolioDate
+  updateDummyPortfolioDate,
+  sellDummyHolding,
+  getDummyTransactions
 } from '../services/api';
 import { PerformanceChart } from '../components/PerformanceChart';
 import {
@@ -17,7 +19,12 @@ import {
   ArrowDownRight,
   Layers,
   Calendar,
-  Edit2
+  Edit2,
+  TrendingDown,
+  History,
+  RotateCcw,
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 
 interface DummyInvestPageProps {
@@ -29,6 +36,8 @@ export const DummyInvestPage: React.FC<DummyInvestPageProps> = ({
   initialPortfolioId,
   onNavigateToAllocator,
 }) => {
+  const getTodayStr = () => new Date().toISOString().split('T')[0];
+
   const [portfolios, setPortfolios] = useState<PaperPortfolio[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(initialPortfolioId || null);
   const [detail, setDetail] = useState<PaperPortfolioDetail | null>(null);
@@ -38,13 +47,27 @@ export const DummyInvestPage: React.FC<DummyInvestPageProps> = ({
   const [chartLoading, setChartLoading] = useState<boolean>(false);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [showEditDateModal, setShowEditDateModal] = useState<boolean>(false);
-  const [editingDateValue, setEditingDateValue] = useState<string>('2026-10-01');
+  const [editingDateValue, setEditingDateValue] = useState<string>(getTodayStr());
 
   // New portfolio form state
   const [newFundName, setNewFundName] = useState<string>('Virtual Alpha Fund');
   const [newMarket, setNewMarket] = useState<MarketType>('US');
   const [newCapital, setNewCapital] = useState<number>(50000);
-  const [newInvestmentDate, setNewInvestmentDate] = useState<string>('2026-10-01');
+  const [newInvestmentDate, setNewInvestmentDate] = useState<string>(getTodayStr());
+
+  // Sell modal state
+  const [showSellModal, setShowSellModal] = useState<boolean>(false);
+  const [sellTicker, setSellTicker] = useState<string>('');
+  const [sellMaxShares, setSellMaxShares] = useState<number>(0);
+  const [sellPrice, setSellPrice] = useState<number>(0);
+  const [sellSharesInput, setSellSharesInput] = useState<string>('');
+  const [sellLoading, setSellLoading] = useState<boolean>(false);
+  const [sellSuccessMsg, setSellSuccessMsg] = useState<string | null>(null);
+
+  // Transaction ledger state
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [showTransactions, setShowTransactions] = useState<boolean>(false);
+  const [loadingTransactions, setLoadingTransactions] = useState<boolean>(false);
 
   const loadPortfolios = async (selectId?: string) => {
     try {
@@ -142,20 +165,83 @@ export const DummyInvestPage: React.FC<DummyInvestPageProps> = ({
     }
   };
 
+  const handleOpenSell = (ticker: string, shares: number, livePrice: number) => {
+    setSellTicker(ticker);
+    setSellMaxShares(shares);
+    setSellPrice(livePrice);
+    setSellSharesInput(String(shares));
+    setSellSuccessMsg(null);
+    setShowSellModal(true);
+  };
+
+  const handleExecuteSell = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedId || !sellTicker) return;
+    const sharesNum = parseFloat(sellSharesInput);
+    if (isNaN(sharesNum) || sharesNum <= 0) {
+      alert('Please enter a valid number of shares.');
+      return;
+    }
+    if (sharesNum > sellMaxShares) {
+      alert(`Cannot sell more than ${sellMaxShares} shares.`);
+      return;
+    }
+
+    try {
+      setSellLoading(true);
+      const res = await sellDummyHolding(selectedId, sellTicker, sharesNum);
+      setSellSuccessMsg(
+        `Sold ${res.shares_sold} shares of ${res.ticker} @ ${res.currency}${res.sell_price.toFixed(2)}. Realized P&L: ${res.realized_pnl >= 0 ? '+' : ''}${res.currency}${res.realized_pnl.toFixed(2)}`
+      );
+      const updated = await getDummyPortfolioDetail(selectedId, timeframe);
+      setDetail(updated);
+      if (showTransactions) {
+        const txns = await getDummyTransactions(selectedId);
+        setTransactions(txns);
+      }
+      setTimeout(() => {
+        setShowSellModal(false);
+        setSellSuccessMsg(null);
+      }, 1200);
+    } catch (err: any) {
+      alert('Sell failed: ' + err.message);
+    } finally {
+      setSellLoading(false);
+    }
+  };
+
+  const handleToggleTransactions = async () => {
+    if (showTransactions) {
+      setShowTransactions(false);
+      return;
+    }
+    if (!selectedId) return;
+    try {
+      setLoadingTransactions(true);
+      const txns = await getDummyTransactions(selectedId);
+      setTransactions(txns);
+      setShowTransactions(true);
+    } catch (err: any) {
+      alert('Failed to load transaction history: ' + err.message);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+
   const handleCreateFastFund = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const isIN = newMarket === 'IN';
       const defaultHoldings = isIN
         ? [
-            { ticker: 'RELIANCE.NS', shares: 25, price: 1164.9, allocated_cash: 29122.5, target_weight: 40 },
-            { ticker: 'TCS.NS', shares: 8, price: 2502.6, allocated_cash: 20020.8, target_weight: 35 },
-            { ticker: 'INFY.NS', shares: 15, price: 1185.0, allocated_cash: 17775.0, target_weight: 25 },
+            { ticker: 'RELIANCE.NS', shares: Math.max(1, Math.floor((newCapital * 0.4) / 1250)), price: 1250.0, allocated_cash: Math.max(1, Math.floor((newCapital * 0.4) / 1250)) * 1250, target_weight: 40 },
+            { ticker: 'TCS.NS', shares: Math.max(1, Math.floor((newCapital * 0.35) / 2500)), price: 2500.0, allocated_cash: Math.max(1, Math.floor((newCapital * 0.35) / 2500)) * 2500, target_weight: 35 },
+            { ticker: 'INFY.NS', shares: Math.max(1, Math.floor((newCapital * 0.25) / 1200)), price: 1200.0, allocated_cash: Math.max(1, Math.floor((newCapital * 0.25) / 1200)) * 1200, target_weight: 25 },
           ]
         : [
-            { ticker: 'NVDA', shares: 80, price: 204.64, allocated_cash: 16371.2, target_weight: 45 },
-            { ticker: 'AAPL', shares: 45, price: 344.63, allocated_cash: 15508.35, target_weight: 35 },
-            { ticker: 'MSFT', shares: 25, price: 420.0, allocated_cash: 10500.0, target_weight: 20 },
+            { ticker: 'NVDA', shares: Math.max(1, Math.floor((newCapital * 0.45) / 170)), price: 170.0, allocated_cash: Math.max(1, Math.floor((newCapital * 0.45) / 170)) * 170, target_weight: 45 },
+            { ticker: 'AAPL', shares: Math.max(1, Math.floor((newCapital * 0.35) / 355)), price: 355.0, allocated_cash: Math.max(1, Math.floor((newCapital * 0.35) / 355)) * 355, target_weight: 35 },
+            { ticker: 'MSFT', shares: Math.max(1, Math.floor((newCapital * 0.20) / 450)), price: 450.0, allocated_cash: Math.max(1, Math.floor((newCapital * 0.20) / 450)) * 450, target_weight: 20 },
           ];
 
       const created = await createDummyPortfolio({
@@ -237,6 +323,32 @@ export const DummyInvestPage: React.FC<DummyInvestPageProps> = ({
               </button>
             </div>
           )}
+
+          {portfolios.length > 0 && (
+            <button
+              type="button"
+              onClick={handleToggleTransactions}
+              className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
+                showTransactions
+                  ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold'
+                  : 'bg-obsidian-950 text-slate-300 border-white/[0.08] hover:text-white hover:bg-obsidian-850'
+              }`}
+              title="View full Buy/Sell transaction ledger"
+            >
+              <History className={`w-3.5 h-3.5 ${loadingTransactions ? 'animate-spin' : ''}`} />
+              <span>Ledger</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onNavigateToAllocator}
+            className="px-3 py-1.5 rounded-lg bg-obsidian-950 text-slate-300 border border-white/[0.08] hover:text-white hover:bg-obsidian-850 transition-all flex items-center gap-1.5"
+            title="Rebalance or run Multi-Agent Dialectical Allocator"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Rebalance (AI)</span>
+          </button>
 
           <button
             type="button"
@@ -367,6 +479,7 @@ export const DummyInvestPage: React.FC<DummyInvestPageProps> = ({
                     <th className="pb-2.5 font-semibold text-right">UNREALIZED P&amp;L</th>
                     <th className="pb-2.5 font-semibold text-right">RETURN %</th>
                     <th className="pb-2.5 font-semibold text-right">SESSION CHANGE</th>
+                    <th className="pb-2.5 font-semibold text-right">ACTION</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
@@ -411,6 +524,17 @@ export const DummyInvestPage: React.FC<DummyInvestPageProps> = ({
                             {h.day_change_pct >= 0 ? '+' : ''}{h.day_change_pct.toFixed(2)}%
                           </span>
                         </td>
+                        <td className="py-2.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenSell(h.ticker, h.shares, h.live_price)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 hover:text-rose-300 border border-rose-500/30 text-[10px] font-bold font-mono transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            title={`Liquidate or sell ${h.ticker} shares`}
+                          >
+                            <TrendingDown className="w-3 h-3" />
+                            <span>SELL</span>
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -418,6 +542,83 @@ export const DummyInvestPage: React.FC<DummyInvestPageProps> = ({
               </table>
             </div>
           </div>
+
+          {/* Transaction History Ledger */}
+          {showTransactions && (
+            <div className="bg-obsidian-900 border border-white/[0.08] rounded-xl p-5 shadow-xl space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-sky-400" />
+                  <h3 className="font-mono text-xs font-bold text-white tracking-wide uppercase">
+                    Order Execution &amp; Transaction Ledger
+                  </h3>
+                  <span className="text-[10px] font-mono text-slate-500">// {transactions.length} historical orders</span>
+                </div>
+                <button
+                  onClick={() => setShowTransactions(false)}
+                  className="font-mono text-[10px] text-slate-400 hover:text-white"
+                >
+                  CLOSE LEDGER
+                </button>
+              </div>
+
+              {transactions.length === 0 ? (
+                <p className="text-xs text-slate-500 font-mono py-4 text-center">No transactions recorded for this fund yet.</p>
+              ) : (
+                <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="sticky top-0 bg-obsidian-900 border-b border-white/[0.06] text-slate-500 text-[10px] uppercase">
+                      <tr>
+                        <th className="pb-2">TIMESTAMP</th>
+                        <th className="pb-2">TYPE</th>
+                        <th className="pb-2">ASSET</th>
+                        <th className="pb-2 text-right">UNITS</th>
+                        <th className="pb-2 text-right">EXECUTION PRICE</th>
+                        <th className="pb-2 text-right">TOTAL CASH</th>
+                        <th className="pb-2 text-right">REALIZED P&amp;L</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {transactions.map((tx) => {
+                        const isBuy = tx.action === 'BUY';
+                        const isProfit = tx.realized_pnl >= 0;
+                        return (
+                          <tr key={tx.id} className="hover:bg-white/[0.02]">
+                            <td className="py-2 text-slate-400 text-[11px]">
+                              {tx.timestamp.replace('T', ' ').slice(0, 16)}
+                            </td>
+                            <td className="py-2">
+                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                isBuy
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                              }`}>
+                                {isBuy ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
+                                {tx.action}
+                              </span>
+                            </td>
+                            <td className="py-2 font-bold text-white">{tx.ticker}</td>
+                            <td className="py-2 text-right text-slate-200 tabular-nums">{tx.shares}</td>
+                            <td className="py-2 text-right text-slate-400 tabular-nums">{curr}{tx.price.toFixed(2)}</td>
+                            <td className="py-2 text-right text-slate-200 tabular-nums">{curr}{tx.total_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td className="py-2 text-right tabular-nums">
+                              {!isBuy ? (
+                                <span className={isProfit ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
+                                  {isProfit ? '+' : ''}{curr}{tx.realized_pnl.toFixed(2)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-600">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         /* Empty State */
@@ -491,6 +692,118 @@ export const DummyInvestPage: React.FC<DummyInvestPageProps> = ({
                   className="px-4 py-1.5 rounded bg-sky-500 hover:bg-sky-400 text-obsidian-950 font-bold"
                 >
                   Save &amp; Recalculate
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sell Modal */}
+      {showSellModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs font-mono">
+          <div className="bg-obsidian-900 border border-white/[0.12] rounded-xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+              <span className="font-bold text-white text-xs uppercase flex items-center gap-2">
+                <TrendingDown className="w-4 h-4 text-rose-400" />
+                Liquidate / Sell: {sellTicker}
+              </span>
+              <button
+                onClick={() => setShowSellModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteSell} className="space-y-3 text-xs">
+              <div className="bg-obsidian-950 p-3 rounded-lg border border-white/[0.06] space-y-1">
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span>Owned Position:</span>
+                  <span className="text-white font-bold">{sellMaxShares} units</span>
+                </div>
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span>Live Market Price:</span>
+                  <span className="text-sky-300 font-bold">{curr}{sellPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-slate-400 text-[11px] pt-1 border-t border-white/[0.04]">
+                  <span>Estimated Proceeds:</span>
+                  <span className="text-emerald-400 font-bold">
+                    {curr}{((parseFloat(sellSharesInput) || 0) * sellPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-[10px] uppercase mb-1">
+                  Units to Sell (Max {sellMaxShares})
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0.0001"
+                  max={sellMaxShares}
+                  step="any"
+                  value={sellSharesInput}
+                  onChange={(e) => setSellSharesInput(e.target.value)}
+                  className="w-full bg-obsidian-950 border border-white/[0.08] rounded px-3 py-2 text-white font-mono text-sm font-bold focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              {/* Quick Fill Buttons */}
+              <div className="grid grid-cols-4 gap-1.5 font-mono text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setSellSharesInput(String(Math.max(1, Math.floor(sellMaxShares * 0.25))))}
+                  className="py-1 px-1 bg-obsidian-950 border border-white/[0.08] rounded hover:border-white/[0.2] text-slate-300"
+                >
+                  25%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSellSharesInput(String(Math.max(1, Math.floor(sellMaxShares * 0.5))))}
+                  className="py-1 px-1 bg-obsidian-950 border border-white/[0.08] rounded hover:border-white/[0.2] text-slate-300"
+                >
+                  50%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSellSharesInput(String(Math.max(1, Math.floor(sellMaxShares * 0.75))))}
+                  className="py-1 px-1 bg-obsidian-950 border border-white/[0.08] rounded hover:border-white/[0.2] text-slate-300"
+                >
+                  75%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSellSharesInput(String(sellMaxShares))}
+                  className="py-1 px-1 bg-rose-500/10 border border-rose-500/30 rounded text-rose-300 font-bold hover:bg-rose-500/20"
+                >
+                  100%
+                </button>
+              </div>
+
+              {sellSuccessMsg && (
+                <div className="p-2.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{sellSuccessMsg}</span>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-white/[0.08]">
+                <button
+                  type="button"
+                  onClick={() => setShowSellModal(false)}
+                  className="px-3 py-1.5 rounded text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sellLoading}
+                  className="px-4 py-1.5 rounded bg-rose-500 hover:bg-rose-400 text-white font-bold flex items-center gap-1.5 transition-colors"
+                >
+                  {sellLoading ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                  <span>Execute Sell Order</span>
                 </button>
               </div>
             </form>
