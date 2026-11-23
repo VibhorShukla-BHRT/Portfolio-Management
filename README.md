@@ -309,7 +309,7 @@ python test_list_models.py
 All project documentation, academic reports, research papers, and presentation slide decks are organized in the [`docs/`](docs/) directory:
 - 📄 **Capstone Final Report (Word):** [`docs/Portfolio_Management_Final_Report.docx`](docs/Portfolio_Management_Final_Report.docx) — Complete 51-page capstone report featuring native Word Math (OMML) equations and academic booktabs tables.
 - 📑 **Capstone Final Report (PDF):** [`docs/Portfolio_Management_Final_Report.pdf`](docs/Portfolio_Management_Final_Report.pdf) — Ready-to-print academic document.
-- 🖋️ **IEEE Research Paper (LaTeX):** [`docs/paper_ieee.tex`](docs/paper_ieee.tex) — Double-column IEEE conference paper ready for Overleaf compilation (zero em-dashes, humanized prose).
+- 🖋️ **IEEE Research Paper (LaTeX):** [`docs/paper_ieee.tex`](docs/paper_ieee.tex) — Double-column IEEE conference paper ready for Overleaf compilation.
 - 📝 **Research Paper (Markdown):** [`docs/AD_COP_RESEARCH_PAPER.md`](docs/AD_COP_RESEARCH_PAPER.md) — Complete markdown research manuscript with mathematical proofs.
 - 🚀 **Startup & Setup Guide:** [`docs/STARTUP_GUIDE.md`](docs/STARTUP_GUIDE.md) — Step-by-step local execution instructions.
 - 📖 **Architecture Specification:** [`docs/MASTER_PROJECT_DOCUMENTATION.md`](docs/MASTER_PROJECT_DOCUMENTATION.md) — Exhaustive multi-agent system specification.
