@@ -11,6 +11,7 @@ An institutional-grade, multi-agent financial asset management architecture that
 
 > **Academic Submission:** Minor Project (Semester 7), Department of Computer Science & Engineering, National Institute of Technology (NIT) Raipur  
 > **Author:** Vibhor Shukla (Roll No: 23115107)  
+> **Live Deployment:** [https://mgmt.portfolio.fin-tech.com](https://mgmt.portfolio.fin-tech.com)  
 > **Repository:** [GitHub](https://github.com/VibhorShukla-BHRT/Portfolio-Management)
 
 
